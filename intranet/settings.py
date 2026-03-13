@@ -25,13 +25,14 @@ CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "channels",
 
     "accounts",
     "feed.apps.FeedConfig",

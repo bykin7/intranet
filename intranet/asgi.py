@@ -4,7 +4,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "intranet.settings")
 
 from django.core.asgi import get_asgi_application
 
-# Сначала полностью инициализируем Django
 django_asgi_app = get_asgi_application()
 
 from channels.auth import AuthMiddlewareStack
