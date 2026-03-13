@@ -32,10 +32,13 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [
+    ".up.railway.app",
+    "intranet-production-07d5.up.railway.app",
+]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.up.railway.app",
+    "https://intranet-production-07d5.up.railway.app",
 ]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
