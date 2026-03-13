@@ -34,14 +34,16 @@ DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 
 ALLOWED_HOSTS = [
     ".up.railway.app",
-    "intranet-production-07d5.up.railway.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://intranet-production-07d5.up.railway.app",
+    "https://*.up.railway.app",
 ]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 # Application definition
 
