@@ -1,0 +1,121 @@
+{% extends "core/base.html" %}
+{% load feed_extras %}
+{% block title %}HappyTogether — Задачи{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Задачи</h1>
+      <div class="muted">Поручения и контроль выполнения</div>
+    </div>
+
+    {% if user.profile.position == "supervisor" or user.profile.position == "security" or user.profile.position == "admin" %}
+      <a class="btn btn-success pill" href="{% url 'task_create' %}">➕ Новая задача</a>
+    {% endif %}
+  </div>
+
+  <div class="card card-soft mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-12 col-md-5">
+          <label class="form-label">Статус</label>
+          <select name="status" class="form-select">
+            <option value="">Все статусы</option>
+            {% for value, label in statuses %}
+              <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-5">
+          <label class="form-label">Приоритет</label>
+          <select name="priority" class="form-select">
+            <option value="">Все приоритеты</option>
+            {% for value, label in priorities %}
+              <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary pill w-100">Фильтр</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-6">
+      <div class="card card-soft">
+        <div class="card-body">
+          <h2 class="h6 mb-3">Мои задачи</h2>
+
+          {% for t in my_tasks %}
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+              <div>
+                <div class="fw-semibold">{{ t.title }}</div>
+
+<div class="small muted">
+  От: {{ t.created_by.username }}
+  {% if t.due_date %}
+    • Срок: {{ t.due_date|date:"d.m.Y" }}
+  {% endif %}
+</div>
+<div class="mt-1 d-flex gap-2 flex-wrap">
+  <span class="badge {{ t.status|task_status_badge_class }} pill">
+    {{ t.get_status_display }}
+  </span>
+  <span class="badge {{ t.priority|task_priority_badge_class }} pill">
+    {{ t.get_priority_display }}
+  </span>
+</div>
+              </div>
+              <a class="btn btn-light pill btn-sm" href="{% url 'task_detail' t.id %}">Открыть</a>
+            </div>
+          {% empty %}
+            <div class="muted">Нет задач</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card card-soft">
+        <div class="card-body">
+          <h2 class="h6 mb-3">Поставленные мной</h2>
+
+          {% for t in created_by_me %}
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+              <div>
+                <div class="fw-semibold">{{ t.title }}</div>
+                <div class="fw-semibold">{{ t.title }}</div>
+
+<div class="small muted">
+  От: {{ t.created_by.username }}
+  {% if t.due_date %}
+    • Срок: {{ t.due_date|date:"d.m.Y" }}
+  {% endif %}
+</div>
+<div class="mt-1 d-flex gap-2 flex-wrap">
+  <span class="badge {{ t.status|task_status_badge_class }} pill">
+    {{ t.get_status_display }}
+  </span>
+  <span class="badge {{ t.priority|task_priority_badge_class }} pill">
+    {{ t.get_priority_display }}
+  </span>
+</div>
+              </div>
+              <a class="btn btn-light pill btn-sm" href="{% url 'task_detail' t.id %}">Открыть</a>
+            </div>
+          {% empty %}
+            <div class="muted">Вы пока не ставили задачи</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

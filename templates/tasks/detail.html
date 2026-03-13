@@ -1,0 +1,51 @@
+{% extends "core/base.html" %}
+{% load feed_extras %}
+{% block title %}HappyTogether — {{ task.title }}{% endblock %}
+
+{% block content %}
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a class="btn btn-light pill" href="{% url 'task_list' %}">← К задачам</a>
+
+  {% if task.created_by == user %}
+    <a class="btn btn-outline-danger pill" href="{% url 'task_delete' task.id %}">
+      Удалить задачу
+    </a>
+  {% endif %}
+</div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <h1 class="h4 mb-1">{{ task.title }}</h1>
+      <div class="muted small mb-3">
+  👤 Постановщик: {{ task.created_by.username }}
+  • Исполнитель: {{ task.assignee.username }}
+  {% if task.due_date %}
+    • 📅 Срок: {{ task.due_date|date:"d.m.Y" }}
+  {% endif %}
+</div>
+
+      {% if task.description %}
+        <div class="mb-3">{{ task.description|linebreaks }}</div>
+      {% endif %}
+
+      <div class="mb-3 d-flex gap-2 flex-wrap">
+  <span class="badge {{ task.status|task_status_badge_class }} pill">
+    {{ task.get_status_display }}
+  </span>
+
+  <span class="badge {{ task.priority|task_priority_badge_class }} pill">
+    {{ task.get_priority_display }}
+  </span>
+</div>
+      <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
+        {% csrf_token %}
+        <select name="status" class="form-select" style="max-width: 260px;">
+          <option value="{{ Status.NEW }}" {% if task.status == Status.NEW %}selected{% endif %}>Новая</option>
+          <option value="{{ Status.IN_PROGRESS }}" {% if task.status == Status.IN_PROGRESS %}selected{% endif %}>В работе</option>
+          <option value="{{ Status.DONE }}" {% if task.status == Status.DONE %}selected{% endif %}>Выполнена</option>
+        </select>
+        <button class="btn btn-primary pill" type="submit">Обновить статус</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

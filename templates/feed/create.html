@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Новый пост{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">Новый пост</h1>
+      <div class="muted">Опубликуй объявление в ленту</div>
+    </div>
+    <a class="btn btn-light pill" href="/">← Назад</a>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Заголовок</label>
+          {{ form.title }}
+          {% if form.title.errors %}
+            <div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Текст</label>
+          {{ form.body }}
+          {% if form.body.errors %}
+            <div class="text-danger small mt-1">{{ form.body.errors|striptags }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+</div>
+        <div class="form-check mb-3">
+          {{ form.is_pinned }}
+          <label class="form-check-label">📌 Важное (закрепить сверху)</label>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-success pill" type="submit">Опубликовать</button>
+          <a class="btn btn-outline-secondary pill" href="/">Отмена</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

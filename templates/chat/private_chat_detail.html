@@ -1,0 +1,247 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Чат с {{ other_user.username }}{% endblock %}
+
+{% block content %}
+  <div class="card-soft overflow-hidden">
+    <div class="card-body border-bottom d-flex align-items-center gap-3">
+      <a class="btn btn-light pill btn-sm" href="{% url 'chat_home' %}">← Назад</a>
+
+      <div class="user-avatar" style="width: 44px; height: 44px; font-size: 1rem;">
+        {{ other_user.username|slice:":1"|upper }}
+      </div>
+
+      <div>
+        <div class="fw-semibold">
+          {{ other_user.profile.full_name|default:other_user.username }}
+        </div>
+        <div class="small muted">
+          @{{ other_user.username }}
+        </div>
+      </div>
+    </div>
+
+    <div id="chat-box"
+         class="p-3 private-chat-box"
+         style="height: 65vh; overflow-y: auto; background: linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);">
+
+      {% for m in messages %}
+        {% if m.author == user %}
+          <div class="d-flex justify-content-end mb-3">
+            <div style="max-width: 72%;">
+              <div class="d-flex justify-content-end mb-1">
+                <div class="small muted">
+                  {{ m.created_at|date:"d.m.Y H:i" }}
+                </div>
+              </div>
+
+              <div class="rounded-4 px-3 py-2 shadow-sm"
+                   style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
+                {{ m.body|linebreaksbr }}
+              </div>
+
+              <div class="d-flex justify-content-end mt-1">
+                <a class="btn btn-sm btn-outline-danger pill"
+                   href="{% url 'private_message_delete' m.id %}">
+                  Удалить
+                </a>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="d-flex justify-content-start mb-3">
+            <div style="max-width: 72%;">
+              <div class="small muted mb-1">
+                {{ m.author.profile.full_name|default:m.author.username }} • {{ m.created_at|date:"d.m.Y H:i" }}
+              </div>
+
+              <div class="rounded-4 px-3 py-2 shadow-sm"
+                   style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
+                {{ m.body|linebreaksbr }}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% empty %}
+        <div class="h-100 d-flex align-items-center justify-content-center">
+          <div class="text-center muted">
+            <div class="mb-2" style="font-size: 2rem;">💬</div>
+            <div>Пока сообщений нет</div>
+            <div class="small">Начните диалог первым</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="card-body border-top">
+      <form id="chat-form" class="d-flex gap-2 align-items-center">
+        {% csrf_token %}
+        <input id="chat-message-input"
+               class="form-control"
+               placeholder="Написать сообщение..."
+               autocomplete="off">
+
+        <button id="chat-send-button"
+                class="btn btn-success pill px-4"
+                type="submit"
+                disabled>
+          Подключение...
+        </button>
+      </form>
+    </div>
+  </div>
+
+<style>
+  .private-chat-box {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .private-chat-box::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .chat-message-appear {
+    animation: chatFadeIn 0.22s ease;
+  }
+
+  @keyframes chatFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+  <script>
+    const chatId = "{{ chat.id }}";
+    const chatBox = document.getElementById("chat-box");
+    const chatForm = document.getElementById("chat-form");
+    const chatInput = document.getElementById("chat-message-input");
+    const sendButton = document.getElementById("chat-send-button");
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socketUrl = protocol + "://" + window.location.host + "/ws/chat/private/" + chatId + "/";
+
+    let chatSocket = null;
+
+    function scrollToBottom() {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function createOwnMessage(data) {
+      return `
+        <div class="d-flex justify-content-end mb-3">
+          <div style="max-width: 72%;">
+            <div class="d-flex justify-content-end mb-1">
+              <div class="small muted">
+                ${data.created_at}
+              </div>
+            </div>
+
+            <div class="rounded-4 px-3 py-2 shadow-sm"
+                 style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
+              ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+            </div>
+
+            <div class="d-flex justify-content-end mt-1">
+              <a class="btn btn-sm btn-outline-danger pill"
+                 href="/chat/private/message/${data.message_id}/delete/">
+                Удалить
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function createOtherMessage(data) {
+      return `
+        <div class="d-flex justify-content-start mb-3">
+          <div style="max-width: 72%;">
+            <div class="small muted mb-1">
+              ${escapeHtml(data.author)} • ${data.created_at}
+            </div>
+
+            <div class="rounded-4 px-3 py-2 shadow-sm"
+                 style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
+              ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    function appendMessage(data) {
+      const emptyState = chatBox.querySelector(".text-center.muted");
+      if (emptyState) {
+        chatBox.innerHTML = "";
+      }
+
+      if (data.is_own) {
+        chatBox.insertAdjacentHTML("beforeend", createOwnMessage(data));
+      } else {
+        chatBox.insertAdjacentHTML("beforeend", createOtherMessage(data));
+      }
+
+      scrollToBottom();
+    }
+
+    function connectSocket() {
+      chatSocket = new WebSocket(socketUrl);
+
+      chatSocket.onopen = function() {
+        sendButton.disabled = false;
+        sendButton.innerText = "Отправить";
+      };
+
+      chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        appendMessage(data);
+      };
+
+      chatSocket.onerror = function(e) {
+        console.error("WS ERROR:", e);
+      };
+
+      chatSocket.onclose = function(e) {
+        console.warn("WS CLOSED:", e.code, e.reason);
+        sendButton.disabled = true;
+        sendButton.innerText = "Нет соединения";
+      };
+    }
+
+    chatForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        alert("Соединение с чатом потеряно. Обновите страницу.");
+        return;
+      }
+
+      chatSocket.send(JSON.stringify({
+        body: message
+      }));
+
+      chatInput.value = "";
+      chatInput.focus();
+    });
+
+    connectSocket();
+    scrollToBottom();
+  </script>
+{% endblock %}

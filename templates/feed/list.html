@@ -1,0 +1,104 @@
+{% extends "core/base.html" %}
+
+{% block title %}HappyTogether — Лента{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">Лента</h1>
+    <div class="muted">Новости и объявления</div>
+  </div>
+
+  {% if user.is_authenticated and user.profile.position == "supervisor" %}
+  <a class="btn btn-success pill" href="{% url 'post_create' %}">
+    ➕ Новый пост
+  </a>
+  {% endif %}
+</div>
+
+<div class="card card-soft mb-3 {% if post.is_pinned %}border-warning{% endif %}">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Поиск</label>
+        <input
+          type="text"
+          name="q"
+          value="{{ search_query }}"
+          class="form-control"
+          placeholder="Поиск по заголовку или тексту"
+        >
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Фильтр</label>
+        <select name="filter" class="form-select">
+          <option value="all" {% if filter_type == "all" %}selected{% endif %}>Все</option>
+          <option value="important" {% if filter_type == "important" %}selected{% endif %}>Важное</option>
+        </select>
+      </div>
+
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary pill w-100">
+          Найти
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if posts %}
+  {% for post in posts %}
+  <div class="card card-soft mb-3">
+    <div class="card-body">
+
+      <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <h2 class="h5 mb-1">{{ post.title }}</h2>
+
+          <div class="small muted">
+            {{ post.author.profile.full_name|default:post.author.username }} • {{ post.created_at|date:"d.m.Y H:i" }}
+          </div>
+
+          <div class="mt-2 d-flex gap-2 flex-wrap">
+            {% if post.is_pinned %}
+            <span class="badge text-bg-warning pill">
+            📌 Важное
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a class="btn btn-outline-secondary pill btn-sm"
+             href="{% url 'post_detail' post.id %}">
+            Читать
+          </a>
+
+          {% if user.is_authenticated and user.profile.position == "supervisor" %}
+          <a class="btn btn-outline-primary pill btn-sm"
+             href="{% url 'post_edit' post.id %}">
+            Редактировать
+          </a>
+
+          <a class="btn btn-outline-danger pill btn-sm"
+             href="{% url 'post_delete' post.id %}">
+            Удалить
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="small muted mt-2">
+💬 {{ post.comments.count }} комментариев
+</div>
+
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="muted">Посты не найдены</div>
+{% endif %}
+
+{% endblock %}

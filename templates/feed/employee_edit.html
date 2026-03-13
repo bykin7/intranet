@@ -1,0 +1,62 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Редактирование сотрудника{% endblock %}
+
+{% block content %}
+  <div class="card-soft mb-4">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <h1 class="h3 mb-1">Редактирование сотрудника</h1>
+        <div class="muted">
+          {{ profile_obj.full_name|default:profile_obj.user.username }} • @{{ profile_obj.user.username }}
+        </div>
+      </div>
+
+      <a class="btn btn-light pill" href="{% url 'employees' %}">← К сотрудникам</a>
+    </div>
+  </div>
+
+  <div class="card-soft">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">ФИО</label>
+            {{ form.full_name }}
+          </div>
+
+          {% if can_change_position and form.position %}
+            <div class="col-12">
+              <label class="form-label">Должность</label>
+              {{ form.position }}
+            </div>
+          {% else %}
+            <div class="col-12">
+              <label class="form-label">Должность</label>
+              <input type="text"
+                     class="form-control"
+                     value="{{ profile_obj.get_position_display }}"
+                     disabled>
+            </div>
+          {% endif %}
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Отдел</label>
+            {{ form.department }}
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">Телефон</label>
+            {{ form.phone }}
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-success pill">Сохранить</button>
+          <a href="{% url 'employees' %}" class="btn btn-outline-secondary pill">Отмена</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

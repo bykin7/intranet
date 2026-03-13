@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Удаление комментария{% endblock %}
+
+{% block content %}
+  <div class="card card-soft">
+    <div class="card-body">
+      <h1 class="h4 mb-3">Удаление комментария</h1>
+
+      <p>Вы действительно хотите удалить этот комментарий?</p>
+
+      <div class="border rounded p-3 mb-3 bg-light">
+        <div class="small muted mb-1">
+          <strong>{{ comment.author.username }}</strong> • {{ comment.created_at|date:"d.m.Y H:i" }}
+        </div>
+        <div>{{ comment.body|linebreaks }}</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger pill">Удалить</button>
+        <a href="{% url 'post_detail' comment.post.id %}" class="btn btn-light pill">Отмена</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Удаление сообщения{% endblock %}
+
+{% block content %}
+  <div class="card card-soft">
+    <div class="card-body">
+      <h1 class="h4 mb-3">Удаление сообщения</h1>
+
+      <p>Вы действительно хотите удалить это сообщение из группы <strong>{{ group.name }}</strong>?</p>
+
+      <div class="border rounded p-3 mb-3 bg-light">
+        <div class="small muted mb-1">
+          <strong>{{ message.author.username }}</strong> • {{ message.created_at|date:"d.m.Y H:i" }}
+        </div>
+        <div>{{ message.body|linebreaks }}</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger pill">Удалить</button>
+        <a href="{% url 'group_chat_detail' group.id %}" class="btn btn-light pill">Отмена</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

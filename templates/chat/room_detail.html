@@ -1,0 +1,39 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — {{ room.name }}{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <a class="btn btn-light pill mb-2" href="{% url 'chat_rooms' %}">← К чатам</a>
+      <h1 class="h4 mb-0">{{ room.name }}</h1>
+      <div class="muted small">Сообщения обновляются при перезагрузке страницы</div>
+    </div>
+  </div>
+
+  <div class="card card-soft mb-3">
+    <div class="card-body" style="max-height: 55vh; overflow: auto;">
+      {% for m in messages %}
+        <div class="mb-3">
+          <div class="small muted">
+            <strong>{{ m.author.username }}</strong> • {{ m.created_at|date:"d.m.Y H:i" }}
+          </div>
+          <div class="bg-white rounded-3 p-2 border">
+            {{ m.body|linebreaks }}
+          </div>
+        </div>
+      {% empty %}
+        <div class="muted">Пока сообщений нет — напишите первое 🙂</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <input name="body" class="form-control" placeholder="Написать сообщение…">
+        <button class="btn btn-success pill" type="submit">Отправить</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

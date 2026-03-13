@@ -1,0 +1,80 @@
+{% extends "core/base.html" %}
+
+{% block title %}HappyTogether — Лента{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Лента</h1>
+      <div class="muted">Новости, объявления и обсуждения внутри филиала</div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-light pill" href="#" title="Скоро сделаем">
+        <span class="me-1">🔎</span> Поиск
+      </a>
+      <a class="btn btn-success pill" href="#" title="Скоро сделаем">
+        <span class="me-1">➕</span> Новый пост
+      </a>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a class="btn btn-outline-primary pill btn-sm" href="#">Все</a>
+    <a class="btn btn-outline-primary pill btn-sm" href="#">Мой отдел</a>
+    <a class="btn btn-outline-primary pill btn-sm" href="#">📌 Важное</a>
+  </div>
+
+  <!-- Карточка закрепленного поста -->
+  <div class="card card-soft mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge text-bg-warning pill">📌 Важное</span>
+            <span class="badge text-bg-light pill text-dark">Всем</span>
+          </div>
+          <h2 class="h5 mb-1">Изменения по графику на эту неделю</h2>
+          <div class="muted small">Автор: Администратор • Сегодня 10:20</div>
+        </div>
+        <a class="btn btn-outline-secondary pill btn-sm" href="#">Открыть</a>
+      </div>
+
+      <p class="mt-3 mb-0">
+        Коллеги, проверьте обновлённые смены. Если есть вопросы — пишите в комментариях.
+      </p>
+
+      <div class="d-flex gap-2 mt-3">
+        <a class="btn btn-light pill btn-sm" href="#">💬 Комментарии (3)</a>
+        <a class="btn btn-light pill btn-sm" href="#">👍 8</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Обычный пост -->
+  <div class="card card-soft mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge text-bg-light pill text-dark">Склад</span>
+          </div>
+          <h2 class="h5 mb-1">Приёмка товара — напоминание</h2>
+          <div class="muted small">Автор: Старший смены • Вчера 17:40</div>
+        </div>
+        <a class="btn btn-outline-secondary pill btn-sm" href="#">Открыть</a>
+      </div>
+
+      <p class="mt-3 mb-0">
+        Пожалуйста, фиксируйте расхождения по накладным сразу при приёмке и прикладывайте фото.
+      </p>
+
+      <div class="d-flex gap-2 mt-3">
+        <a class="btn btn-light pill btn-sm" href="#">💬 Комментарии (0)</a>
+        <a class="btn btn-light pill btn-sm" href="#">👍 2</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Пустое состояние (когда постов нет) — оставим на будущее -->
+{% endblock %}

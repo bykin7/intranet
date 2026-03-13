@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Чаты{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Чаты</h1>
+      <div class="muted">Общий чат и комнаты по темам</div>
+    </div>
+
+    {% if user.is_staff %}
+      <a class="btn btn-light pill" href="/admin/chat/chatroom/add/">➕ Создать комнату</a>
+    {% endif %}
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      {% for r in rooms %}
+        <div class="d-flex align-items-center justify-content-between py-2 {% if not forloop.last %}border-bottom{% endif %}">
+          <div class="fw-semibold">{{ r.name }}</div>
+          <a class="btn btn-primary pill btn-sm" href="{% url 'chat_room_detail' r.id %}">Открыть</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

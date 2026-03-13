@@ -1,0 +1,35 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Группы{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Группы</h1>
+      <div class="muted">Рабочие группы сотрудников</div>
+    </div>
+
+    {% if user.profile.position == "supervisor" or user.profile.position == "security" or user.profile.position == "admin" %}
+      <a class="btn btn-success pill" href="{% url 'group_create' %}">➕ Новая группа</a>
+    {% endif %}
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      {% if groups %}
+        {% for group in groups %}
+          <div class="d-flex align-items-center justify-content-between py-2 {% if not forloop.last %}border-bottom{% endif %}">
+            <div>
+              <div class="fw-semibold">{{ group.name }}</div>
+              <div class="small muted">
+                Владелец: {{ group.owner.username }}
+              </div>
+            </div>
+            <a class="btn btn-primary pill btn-sm" href="{% url 'group_detail' group.id %}">Открыть</a>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="muted">Групп пока нет.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

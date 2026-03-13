@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Редактирование поста{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">Редактирование поста</h1>
+      <div class="muted">Изменение публикации</div>
+    </div>
+    <a class="btn btn-light pill" href="{% url 'post_detail' post.id %}">← Назад</a>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Заголовок</label>
+          {{ form.title }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Текст</label>
+          {{ form.body }}
+        </div>
+        <div class="mb-3">
+        <div class="form-check mb-3">
+          {{ form.is_pinned }}
+          <label class="form-check-label">📌 Важное</label>
+        </div>
+
+        <button class="btn btn-success pill" type="submit">Сохранить</button>
+        <a class="btn btn-outline-secondary pill" href="{% url 'post_detail' post.id %}">Отмена</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

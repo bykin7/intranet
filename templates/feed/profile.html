@@ -1,0 +1,85 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Мой профиль{% endblock %}
+
+{% block content %}
+  <div class="row g-4">
+    <div class="col-12 col-lg-4">
+      <div class="card-soft h-100">
+        <div class="card-body text-center">
+          <div class="user-avatar mx-auto mb-3" style="width: 72px; height: 72px; font-size: 1.4rem;">
+            {{ user.username|slice:":1"|upper }}
+          </div>
+
+          <h1 class="h4 mb-1">
+            {{ user.profile.full_name|default:user.username }}
+          </h1>
+
+          <div class="muted mb-2">@{{ user.username }}</div>
+
+          <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+            {% if user.profile.position == "supervisor" %}
+              <span class="badge text-bg-primary pill">Супервайзер</span>
+            {% elif user.profile.position == "security" %}
+              <span class="badge text-bg-danger pill">Служба безопасности</span>
+            {% elif user.profile.position == "admin" %}
+              <span class="badge text-bg-warning pill text-dark">Администратор</span>
+            {% elif user.profile.position == "cashier" %}
+              <span class="badge text-bg-success pill">Кассир</span>
+            {% elif user.profile.position == "loss_prevention" %}
+              <span class="badge text-bg-info pill text-dark">Специалист ОПП</span>
+            {% else %}
+              <span class="badge text-bg-light text-dark pill">Без должности</span>
+            {% endif %}
+          </div>
+
+          <div class="mt-4 text-start small">
+            <div class="mb-2">
+              <span class="muted">Отдел:</span>
+              <span>{{ user.profile.department|default:"—" }}</span>
+            </div>
+            <div>
+              <span class="muted">Телефон:</span>
+              <span>{{ user.profile.phone|default:"—" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <div class="card-soft">
+        <div class="card-body">
+          <div class="mb-4">
+            <h2 class="h4 mb-1">Редактирование профиля</h2>
+            <div class="muted">Изменение личных данных сотрудника</div>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">ФИО</label>
+                {{ form.full_name }}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label">Отдел</label>
+                {{ form.department }}
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label">Телефон</label>
+                {{ form.phone }}
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button type="submit" class="btn btn-success pill">Сохранить изменения</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

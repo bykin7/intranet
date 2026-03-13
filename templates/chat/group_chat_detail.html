@@ -1,0 +1,367 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — {{ group.name }}{% endblock %}
+
+{% block content %}
+  <div class="card-soft overflow-hidden">
+    <div class="card-body border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <a class="btn btn-light pill btn-sm" href="{% url 'chat_home' %}">← Назад</a>
+
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle"
+             style="width: 46px; height: 46px; font-size: 1.1rem; font-weight: 800; color: #1d4ed8;">
+          👥
+        </div>
+
+        <div>
+          <div class="fw-semibold">{{ group.name }}</div>
+          <div class="small muted">
+            {{ group.description|default:"Групповой чат сотрудников" }}
+          </div>
+          <div class="small muted">
+            Владелец: {{ group.owner.profile.full_name|default:group.owner.username }}
+          </div>
+        </div>
+      </div>
+
+      {% if is_owner %}
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-success pill btn-sm" href="{% url 'group_chat_add_member' group.id %}">
+            ➕ Добавить участника
+          </a>
+          <a class="btn btn-outline-danger pill btn-sm" href="{% url 'group_chat_delete' group.id %}">
+            Удалить группу
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+<div class="card-body border-bottom" style="background:#f8fafc;">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="fw-semibold">
+      Участники: {{ members|length }}
+    </div>
+
+    <button class="btn btn-light pill btn-sm"
+            type="button"
+            id="toggle-members-btn">
+      Показать участников
+    </button>
+  </div>
+
+  <div id="members-panel" class="mt-3" style="display: none;">
+    <div class="d-flex flex-wrap gap-2">
+      {% if members %}
+        {% for member in members %}
+          <span class="badge text-bg-light text-dark pill border">
+            {{ member.user.profile.full_name|default:member.user.username }}
+            {% if member.user == group.owner %}
+              • владелец
+            {% endif %}
+          </span>
+        {% endfor %}
+      {% else %}
+        <span class="muted">Участников пока нет</span>
+      {% endif %}
+    </div>
+
+    {% if is_owner %}
+      <div class="mt-3">
+        <div class="small muted mb-2">Управление участниками</div>
+
+        <div class="d-flex flex-wrap gap-2">
+          {% for member in members %}
+            {% if member.user != group.owner %}
+              <a class="btn btn-sm btn-outline-danger pill"
+                 href="{% url 'group_chat_remove_member' group.id member.id %}">
+                Удалить {{ member.user.profile.full_name|default:member.user.username }}
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+    <div id="group-chat-box"
+         class="p-3 group-chat-box"
+         style="height: 60vh; overflow-y: auto; background: linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);">
+
+      {% for m in messages %}
+        {% if m.author == user %}
+          <div class="d-flex justify-content-end mb-3">
+            <div style="max-width: 72%;">
+              <div class="d-flex justify-content-end mb-1">
+                <div class="small muted">
+                  {{ m.created_at|date:"d.m.Y H:i" }}
+                </div>
+              </div>
+
+              <div class="rounded-4 px-3 py-2 shadow-sm"
+                   style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
+                {{ m.body|linebreaksbr }}
+              </div>
+
+              <div class="d-flex justify-content-end mt-1">
+                <a class="btn btn-sm btn-outline-danger pill"
+                   href="{% url 'group_message_delete' m.id %}">
+                  Удалить
+                </a>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="d-flex justify-content-start mb-3">
+            <div style="max-width: 72%;">
+              <div class="small muted mb-1">
+                {{ m.author.profile.full_name|default:m.author.username }}
+                {% if m.author == group.owner %} • владелец{% endif %}
+                • {{ m.created_at|date:"d.m.Y H:i" }}
+              </div>
+
+              <div class="rounded-4 px-3 py-2 shadow-sm"
+                   style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
+                {{ m.body|linebreaksbr }}
+              </div>
+
+              {% if is_owner %}
+                <div class="mt-1">
+                  <a class="btn btn-sm btn-outline-danger pill"
+                     href="{% url 'group_message_delete' m.id %}">
+                    Удалить
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% empty %}
+        <div class="h-100 d-flex align-items-center justify-content-center">
+          <div class="text-center muted">
+            <div class="mb-2" style="font-size: 2rem;">👥</div>
+            <div>Пока сообщений нет</div>
+            <div class="small">Начните общение в группе</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="card-body border-top">
+      <form id="group-chat-form" class="d-flex gap-2 align-items-center">
+        {% csrf_token %}
+        <input id="group-chat-message-input"
+               class="form-control"
+               placeholder="Написать сообщение..."
+               autocomplete="off">
+
+        <button id="group-chat-send-button"
+                class="btn btn-success pill px-4"
+                type="submit"
+                disabled>
+          Подключение...
+        </button>
+      </form>
+    </div>
+  </div>
+
+<style>
+  .group-chat-box {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .group-chat-box::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .chat-message-appear {
+    animation: chatFadeIn 0.22s ease;
+  }
+
+  @keyframes chatFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  const groupId = "{{ group.id }}";
+  const isOwner = {{ is_owner|yesno:"true,false" }};
+
+  const chatBox = document.getElementById("group-chat-box");
+  const chatForm = document.getElementById("group-chat-form");
+  const chatInput = document.getElementById("group-chat-message-input");
+  const sendButton = document.getElementById("group-chat-send-button");
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const socketUrl = protocol + "://" + window.location.host + "/ws/chat/group/" + groupId + "/";
+
+  let chatSocket = null;
+
+  function isNearBottom() {
+    return chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
+  }
+
+  function scrollToBottom(force = false) {
+    if (force || isNearBottom()) {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.innerText = text;
+    return div.innerHTML;
+  }
+
+  function createOwnMessage(data) {
+    return `
+      <div class="d-flex justify-content-end mb-3 chat-message-appear">
+        <div style="max-width: 72%;">
+          <div class="d-flex justify-content-end mb-1">
+            <div class="small muted">
+              ${data.created_at}
+            </div>
+          </div>
+
+          <div class="rounded-4 px-3 py-2 shadow-sm"
+               style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
+            ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+          </div>
+
+          <div class="d-flex justify-content-end mt-1">
+            <a class="btn btn-sm btn-outline-danger pill"
+               href="/chat/group/message/${data.message_id}/delete/">
+              Удалить
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function createOtherMessage(data) {
+    const ownerMark = data.is_owner_author ? " • владелец" : "";
+    const deleteButton = isOwner
+      ? `<div class="mt-1">
+           <a class="btn btn-sm btn-outline-danger pill"
+              href="/chat/group/message/${data.message_id}/delete/">
+             Удалить
+           </a>
+         </div>`
+      : "";
+
+    return `
+      <div class="d-flex justify-content-start mb-3 chat-message-appear">
+        <div style="max-width: 72%;">
+          <div class="small muted mb-1">
+            ${escapeHtml(data.author)}${ownerMark} • ${data.created_at}
+          </div>
+
+          <div class="rounded-4 px-3 py-2 shadow-sm"
+               style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
+            ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+          </div>
+
+          ${deleteButton}
+        </div>
+      </div>
+    `;
+  }
+
+  function appendMessage(data) {
+    const shouldStickToBottom = isNearBottom();
+
+    const emptyState = chatBox.querySelector(".text-center.muted");
+    if (emptyState) {
+      chatBox.innerHTML = "";
+    }
+
+    if (data.is_own) {
+      chatBox.insertAdjacentHTML("beforeend", createOwnMessage(data));
+    } else {
+      chatBox.insertAdjacentHTML("beforeend", createOtherMessage(data));
+    }
+
+    if (shouldStickToBottom) {
+      scrollToBottom(true);
+    }
+  }
+
+  function connectSocket() {
+    chatSocket = new WebSocket(socketUrl);
+
+    chatSocket.onopen = function() {
+      sendButton.disabled = false;
+      sendButton.innerText = "Отправить";
+    };
+
+    chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      appendMessage(data);
+    };
+
+    chatSocket.onerror = function(e) {
+      console.error("GROUP WS ERROR:", e);
+    };
+
+    chatSocket.onclose = function(e) {
+      console.warn("GROUP WS CLOSED:", e.code, e.reason);
+      sendButton.disabled = true;
+      sendButton.innerText = "Нет соединения";
+    };
+  }
+
+  chatForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+      alert("Соединение с групповым чатом потеряно. Обновите страницу.");
+      return;
+    }
+
+    chatSocket.send(JSON.stringify({
+      body: message
+    }));
+
+    chatInput.value = "";
+    chatInput.focus();
+  });
+
+  chatInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      chatForm.requestSubmit();
+    }
+  });
+  const toggleMembersBtn = document.getElementById("toggle-members-btn");
+const membersPanel = document.getElementById("members-panel");
+
+if (toggleMembersBtn && membersPanel) {
+  toggleMembersBtn.addEventListener("click", function() {
+    const isHidden = membersPanel.style.display === "none";
+
+    if (isHidden) {
+      membersPanel.style.display = "block";
+      toggleMembersBtn.innerText = "Скрыть участников";
+    } else {
+      membersPanel.style.display = "none";
+      toggleMembersBtn.innerText = "Показать участников";
+    }
+  });
+}
+  connectSocket();
+  scrollToBottom(true);
+</script>
+{% endblock %}

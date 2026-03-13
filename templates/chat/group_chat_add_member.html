@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Добавить участника{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">Добавить участника</h1>
+      <div class="muted">Группа: {{ group.name }}</div>
+    </div>
+    <a class="btn btn-light pill" href="{% url 'group_chat_detail' group.id %}">← Назад</a>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Сотрудник</label>
+          {{ form.user }}
+        </div>
+
+        <button class="btn btn-success pill" type="submit">Добавить</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Новый личный чат{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">Новый личный чат</h1>
+      <div class="muted">Выберите сотрудника для переписки</div>
+    </div>
+    <a class="btn btn-light pill" href="{% url 'chat_home' %}">← Назад</a>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Сотрудник</label>
+          {{ form.user }}
+        </div>
+
+        <button class="btn btn-success pill" type="submit">Создать чат</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

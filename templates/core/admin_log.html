@@ -1,0 +1,20 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Журнал действий{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">Журнал действий</h1>
+      <div class="muted">Последние события системы</div>
+    </div>
+    <a class="btn btn-light pill" href="/">← Назад</a>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      {% for line in lines %}
+        <div class="small border-bottom py-2">{{ line }}</div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

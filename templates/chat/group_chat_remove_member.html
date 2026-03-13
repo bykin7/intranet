@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Удаление участника{% endblock %}
+
+{% block content %}
+  <div class="card card-soft">
+    <div class="card-body">
+      <h1 class="h4 mb-3">Удаление участника</h1>
+      <p>
+        Вы действительно хотите удалить участника
+        <strong>{{ membership.user.username }}</strong>
+        из группы <strong>{{ group.name }}</strong>?
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger pill">Удалить</button>
+        <a href="{% url 'group_chat_detail' group.id %}" class="btn btn-light pill">Отмена</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

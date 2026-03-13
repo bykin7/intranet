@@ -1,0 +1,41 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Вход{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-5">
+      <div class="card card-soft">
+        <div class="card-body p-4">
+          <h1 class="h4 mb-1">Вход</h1>
+          <div class="muted mb-3">Войдите, чтобы писать комментарии и создавать посты (для админа)</div>
+
+          {% if form.errors %}
+            <div class="alert alert-danger">
+              Неверный логин или пароль.
+            </div>
+          {% endif %}
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label">Логин</label>
+              <input type="text" name="username" class="form-control" autofocus required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Пароль</label>
+              <input type="password" name="password" class="form-control" required>
+            </div>
+
+            <button class="btn btn-primary pill w-100" type="submit">Войти</button>
+          </form>
+
+          <div class="muted small mt-3">
+            Если забыли пароль — его можно сбросить только через администратора (пока).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

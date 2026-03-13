@@ -1,0 +1,21 @@
+{% extends "core/base.html" %}
+{% block title %}HappyTogether — Удаление поста{% endblock %}
+
+{% block content %}
+  <div class="card card-soft">
+    <div class="card-body">
+      <h1 class="h4 mb-3">Удаление поста</h1>
+      <p>Вы действительно хотите удалить пост:</p>
+
+      <div class="mb-3">
+        <strong>{{ post.title }}</strong>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger pill">Удалить</button>
+        <a href="{% url 'post_detail' post.id %}" class="btn btn-light pill">Отмена</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}
