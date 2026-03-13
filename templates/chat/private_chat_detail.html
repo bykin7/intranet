@@ -119,129 +119,146 @@
 </style>
 
   <script>
-    const chatId = "{{ chat.id }}";
-    const chatBox = document.getElementById("chat-box");
-    const chatForm = document.getElementById("chat-form");
-    const chatInput = document.getElementById("chat-message-input");
-    const sendButton = document.getElementById("chat-send-button");
+  const chatId = "{{ chat.id }}";
+  const chatBox = document.getElementById("chat-box");
+  const chatForm = document.getElementById("chat-form");
+  const chatInput = document.getElementById("chat-message-input");
+  const sendButton = document.getElementById("chat-send-button");
 
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const socketUrl = protocol + "://" + window.location.host + "/ws/chat/private/" + chatId + "/";
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const socketUrl = protocol + "://" + window.location.host + "/ws/chat/private/" + chatId + "/";
 
-    let chatSocket = null;
+  let chatSocket = null;
 
-    function scrollToBottom() {
+  function isNearBottom() {
+    return chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
+  }
+
+  function scrollToBottom(force = false) {
+    if (force || isNearBottom()) {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
+  }
 
-    function createOwnMessage(data) {
-      return `
-        <div class="d-flex justify-content-end mb-3">
-          <div style="max-width: 72%;">
-            <div class="d-flex justify-content-end mb-1">
-              <div class="small muted">
-                ${data.created_at}
-              </div>
-            </div>
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.innerText = text;
+    return div.innerHTML;
+  }
 
-            <div class="rounded-4 px-3 py-2 shadow-sm"
-                 style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
-              ${escapeHtml(data.body).replace(/\n/g, "<br>")}
-            </div>
-
-            <div class="d-flex justify-content-end mt-1">
-              <a class="btn btn-sm btn-outline-danger pill"
-                 href="/chat/private/message/${data.message_id}/delete/">
-                Удалить
-              </a>
+  function createOwnMessage(data) {
+    return `
+      <div class="d-flex justify-content-end mb-3 chat-message-appear">
+        <div style="max-width: 72%;">
+          <div class="d-flex justify-content-end mb-1">
+            <div class="small muted">
+              ${data.created_at}
             </div>
           </div>
-        </div>
-      `;
-    }
 
-    function createOtherMessage(data) {
-      return `
-        <div class="d-flex justify-content-start mb-3">
-          <div style="max-width: 72%;">
-            <div class="small muted mb-1">
-              ${escapeHtml(data.author)} • ${data.created_at}
-            </div>
+          <div class="rounded-4 px-3 py-2 shadow-sm"
+               style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
+            ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+          </div>
 
-            <div class="rounded-4 px-3 py-2 shadow-sm"
-                 style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
-              ${escapeHtml(data.body).replace(/\n/g, "<br>")}
-            </div>
+          <div class="d-flex justify-content-end mt-1">
+            <a class="btn btn-sm btn-outline-danger pill"
+               href="/chat/private/message/${data.message_id}/delete/">
+              Удалить
+            </a>
           </div>
         </div>
-      `;
+      </div>
+    `;
+  }
+
+  function createOtherMessage(data) {
+    return `
+      <div class="d-flex justify-content-start mb-3 chat-message-appear">
+        <div style="max-width: 72%;">
+          <div class="small muted mb-1">
+            ${escapeHtml(data.author)} • ${data.created_at}
+          </div>
+
+          <div class="rounded-4 px-3 py-2 shadow-sm"
+               style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
+            ${escapeHtml(data.body).replace(/\n/g, "<br>")}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function appendMessage(data) {
+    const shouldStickToBottom = isNearBottom();
+
+    const emptyState = chatBox.querySelector(".text-center.muted");
+    if (emptyState) {
+      chatBox.innerHTML = "";
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement("div");
-      div.innerText = text;
-      return div.innerHTML;
+    if (data.is_own) {
+      chatBox.insertAdjacentHTML("beforeend", createOwnMessage(data));
+    } else {
+      chatBox.insertAdjacentHTML("beforeend", createOtherMessage(data));
     }
 
-    function appendMessage(data) {
-      const emptyState = chatBox.querySelector(".text-center.muted");
-      if (emptyState) {
-        chatBox.innerHTML = "";
-      }
+    if (shouldStickToBottom) {
+      scrollToBottom(true);
+    }
+  }
 
-      if (data.is_own) {
-        chatBox.insertAdjacentHTML("beforeend", createOwnMessage(data));
-      } else {
-        chatBox.insertAdjacentHTML("beforeend", createOtherMessage(data));
-      }
+  function connectSocket() {
+    chatSocket = new WebSocket(socketUrl);
 
-      scrollToBottom();
+    chatSocket.onopen = function() {
+      sendButton.disabled = false;
+      sendButton.innerText = "Отправить";
+    };
+
+    chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      appendMessage(data);
+    };
+
+    chatSocket.onerror = function(e) {
+      console.error("WS ERROR:", e);
+    };
+
+    chatSocket.onclose = function(e) {
+      console.warn("WS CLOSED:", e.code, e.reason);
+      sendButton.disabled = true;
+      sendButton.innerText = "Нет соединения";
+    };
+  }
+
+  chatForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+      alert("Соединение с чатом потеряно. Обновите страницу.");
+      return;
     }
 
-    function connectSocket() {
-      chatSocket = new WebSocket(socketUrl);
+    chatSocket.send(JSON.stringify({
+      body: message
+    }));
 
-      chatSocket.onopen = function() {
-        sendButton.disabled = false;
-        sendButton.innerText = "Отправить";
-      };
+    chatInput.value = "";
+    chatInput.focus();
+  });
 
-      chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        appendMessage(data);
-      };
-
-      chatSocket.onerror = function(e) {
-        console.error("WS ERROR:", e);
-      };
-
-      chatSocket.onclose = function(e) {
-        console.warn("WS CLOSED:", e.code, e.reason);
-        sendButton.disabled = true;
-        sendButton.innerText = "Нет соединения";
-      };
-    }
-
-    chatForm.addEventListener("submit", function(e) {
+  chatInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      chatForm.requestSubmit();
+    }
+  });
 
-      const message = chatInput.value.trim();
-      if (!message) return;
-
-      if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-        alert("Соединение с чатом потеряно. Обновите страницу.");
-        return;
-      }
-
-      chatSocket.send(JSON.stringify({
-        body: message
-      }));
-
-      chatInput.value = "";
-      chatInput.focus();
-    });
-
-    connectSocket();
-    scrollToBottom();
-  </script>
+  connectSocket();
+  scrollToBottom(true);
+</script>
 {% endblock %}
