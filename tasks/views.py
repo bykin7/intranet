@@ -1,11 +1,11 @@
 import logging
 logger = logging.getLogger("happytogether")
-from django.contrib.admin.views.decorators import staff_member_required
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.http import HttpResponseForbidden
-from feed.permissions import can_create_tasks
+
 from .forms import TaskForm
 from .models import Task
 
@@ -48,7 +48,10 @@ def task_create(request):
             task = form.save(commit=False)
             task.created_by = request.user
             task.save()
-            logger.info(f"TASK_CREATE id={task.id} by={request.user.username} to={task.assignee.username} due={task.due_date}")
+            logger.info(
+                f"TASK_CREATE id={task.id} by={request.user.username} "
+                f"to={task.assignee.username} due={task.due_date}"
+            )
             return redirect(reverse("task_list"))
     else:
         form = TaskForm()
@@ -60,29 +63,22 @@ def task_create(request):
 def task_detail(request, task_id: int):
     task = get_object_or_404(Task.objects.select_related("assignee", "created_by"), id=task_id)
 
-    # доступ: исполнитель, постановщик, либо staff
     if not (request.user == task.assignee or request.user == task.created_by or request.user.is_staff):
         return redirect(reverse("task_list"))
 
     if request.method == "POST":
         new_status = request.POST.get("status")
         allowed = {Task.Status.NEW, Task.Status.IN_PROGRESS, Task.Status.DONE}
+
         if new_status in allowed:
-            task.status = new_status
             old = task.status
             task.status = new_status
             task.save()
             logger.info(f"TASK_STATUS_CHANGE id={task.id} by={request.user.username} {old}->{new_status}")
-            task.save()
+
         return redirect(reverse("task_detail", args=[task.id]))
 
     return render(request, "tasks/detail.html", {"task": task, "Status": Task.Status})
-
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
-from django.shortcuts import get_object_or_404, redirect, render
-
-from .models import Task
 
 
 @login_required

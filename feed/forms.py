@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+
 from .models import Post, Profile
 
 
@@ -8,35 +9,12 @@ class PostForm(forms.ModelForm):
         model = Post
         fields = ["title", "body", "is_pinned"]
         widgets = {
-            "title": forms.TextInput(attrs={"class": "form-control", "placeholder": "Заголовок"}),
-            "body": forms.Textarea(attrs={"class": "form-control", "rows": 6, "placeholder": "Текст поста"}),
-            "is_pinned": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "body": forms.Textarea(attrs={"class": "form-control", "rows": 6}),
         }
+
 
 class ProfileForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = ["full_name", "department", "phone"]
-        widgets = {
-            "full_name": forms.TextInput(attrs={"class": "form-control"}),
-            "department": forms.TextInput(attrs={"class": "form-control"}),
-            "phone": forms.TextInput(attrs={"class": "form-control"}),
-        }
-
-
-class EmployeeProfileForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = ["full_name", "position", "department", "phone"]
-        widgets = {
-            "full_name": forms.TextInput(attrs={"class": "form-control"}),
-            "position": forms.Select(attrs={"class": "form-select"}),
-            "department": forms.TextInput(attrs={"class": "form-control"}),
-            "phone": forms.TextInput(attrs={"class": "form-control"}),
-        }
-
-
-class EmployeeProfileLimitedForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ["full_name", "department", "phone"]
@@ -58,7 +36,6 @@ class EmployeeCreateForm(forms.Form):
     )
     full_name = forms.CharField(
         label="ФИО",
-        required=False,
         widget=forms.TextInput(attrs={"class": "form-control"})
     )
     position = forms.ChoiceField(
@@ -78,7 +55,35 @@ class EmployeeCreateForm(forms.Form):
     )
 
     def clean_username(self):
-        username = self.cleaned_data["username"]
+        username = self.cleaned_data["username"].strip()
         if User.objects.filter(username=username).exists():
             raise forms.ValidationError("Пользователь с таким логином уже существует.")
         return username
+
+
+class EmployeeEditForm(forms.ModelForm):
+    new_password = forms.CharField(
+        label="Новый пароль",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Оставьте пустым, если пароль менять не нужно",
+            }
+        ),
+    )
+
+    class Meta:
+        model = Profile
+        fields = ["full_name", "position", "department", "phone"]
+        widgets = {
+            "full_name": forms.TextInput(attrs={"class": "form-control"}),
+            "position": forms.Select(attrs={"class": "form-select"}),
+            "department": forms.TextInput(attrs={"class": "form-control"}),
+            "phone": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def __init__(self, *args, can_change_position=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not can_change_position:
+            self.fields.pop("position", None)

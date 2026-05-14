@@ -2,20 +2,32 @@
 {% block title %}HappyTogether — Удаление поста{% endblock %}
 
 {% block content %}
-  <div class="card card-soft">
-    <div class="card-body">
-      <h1 class="h4 mb-3">Удаление поста</h1>
-      <p>Вы действительно хотите удалить пост:</p>
-
-      <div class="mb-3">
-        <strong>{{ post.title }}</strong>
-      </div>
-
-      <form method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger pill">Удалить</button>
-        <a href="{% url 'post_detail' post.id %}" class="btn btn-light pill">Отмена</a>
-      </form>
-    </div>
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <h1 class="page-title">Удаление поста</h1>
+    <div class="page-subtitle">Подтвердите удаление публикации</div>
   </div>
+
+  <div class="page-header-actions">
+    <a href="{% url 'post_detail' post.id %}" class="btn btn-light pill btn-sm">
+      ← Назад
+    </a>
+  </div>
+</div>
+
+<div class="card card-soft">
+  <div class="card-body">
+    <p class="mb-3">Вы действительно хотите удалить пост:</p>
+
+    <div class="border rounded p-3 mb-4 bg-light">
+      <strong>{{ post.title }}</strong>
+    </div>
+
+    <form method="post" class="d-flex gap-2">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger pill">Удалить</button>
+      <a href="{% url 'post_detail' post.id %}" class="btn btn-outline-secondary pill">Отмена</a>
+    </form>
+  </div>
+</div>
 {% endblock %}

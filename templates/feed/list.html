@@ -4,20 +4,20 @@
 
 {% block content %}
 
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-  <div>
-    <h1 class="h3 mb-1">Лента</h1>
-    <div class="muted">Новости и объявления</div>
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <h1 class="page-title">Лента</h1>
+    <div class="page-subtitle">Новости и объявления компании</div>
   </div>
 
-  {% if user.is_authenticated and user.profile.position == "supervisor" %}
-  <a class="btn btn-success pill" href="{% url 'post_create' %}">
-    ➕ Новый пост
-  </a>
-  {% endif %}
+  <div class="page-header-actions">
+    {% if user.profile.position == "supervisor" or user.profile.position == "admin" %}
+      <a class="btn btn-success pill" href="{% url 'post_create' %}">➕ Новый пост</a>
+    {% endif %}
+  </div>
 </div>
 
-<div class="card card-soft mb-3 {% if post.is_pinned %}border-warning{% endif %}">
+<div class="card card-soft mb-3">
   <div class="card-body">
     <form method="get" class="row g-3">
       <div class="col-md-8">
@@ -50,7 +50,7 @@
 
 {% if posts %}
   {% for post in posts %}
-  <div class="card card-soft mb-3">
+  <div class="card card-soft mb-3 {% if post.is_pinned %}border-warning{% endif %}">
     <div class="card-body">
 
       <div class="d-flex justify-content-between align-items-start gap-3">
@@ -64,7 +64,7 @@
           <div class="mt-2 d-flex gap-2 flex-wrap">
             {% if post.is_pinned %}
             <span class="badge text-bg-warning pill">
-            📌 Важное
+              📌 Важное
             </span>
             {% endif %}
           </div>
@@ -91,8 +91,8 @@
       </div>
 
       <div class="small muted mt-2">
-💬 {{ post.comments.count }} комментариев
-</div>
+        💬 {{ post.comments.count }} комментариев
+      </div>
 
     </div>
   </div>

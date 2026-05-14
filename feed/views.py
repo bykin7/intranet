@@ -7,13 +7,8 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import (
-    PostForm,
-    ProfileForm,
-    EmployeeProfileForm,
-    EmployeeProfileLimitedForm,
-    EmployeeCreateForm,
-)
+from .forms import PostForm, ProfileForm, EmployeeCreateForm, EmployeeEditForm
+
 from .models import Post, Profile, Comment
 from .permissions import (
     can_create_posts,
@@ -240,7 +235,9 @@ def employees_list(request):
 @login_required
 def employee_create(request):
     if not can_manage_employees(request.user):
-        return HttpResponseForbidden("У вас нет доступа к созданию сотрудников.")
+        return HttpResponseForbidden(
+            "Только системный администратор может создавать сотрудников."
+        )
 
     if request.method == "POST":
         form = EmployeeCreateForm(request.POST)
@@ -257,51 +254,51 @@ def employee_create(request):
             profile.phone = form.cleaned_data["phone"]
             profile.save()
 
-            logger.info(
-                f"EMPLOYEE_CREATE by={request.user.username} created={user.username} position={profile.position}"
-            )
-
             return redirect("employees")
+        else:
+            print("EMPLOYEE CREATE FORM ERRORS:", form.errors)
     else:
         form = EmployeeCreateForm()
 
     return render(request, "feed/employee_create.html", {"form": form})
 
-
 @login_required
 def employee_edit(request, profile_id):
     if not can_manage_employees(request.user):
-        return HttpResponseForbidden("У вас нет доступа к управлению сотрудниками.")
+        return HttpResponseForbidden(
+            "Только системный администратор может редактировать сотрудников."
+        )
 
-    profile = get_object_or_404(Profile.objects.select_related("user"), id=profile_id)
-
-    # По умолчанию:
-    # СВ и СБ могут менять должности,
-    # но НЕ СВОЮ собственную
-    if can_change_position(request.user) and profile.user != request.user:
-        form_class = EmployeeProfileForm
-        can_edit_position = True
-    else:
-        form_class = EmployeeProfileLimitedForm
-        can_edit_position = False
+    profile_obj = get_object_or_404(Profile, id=profile_id)
+    can_change_pos = can_change_position(request.user)
 
     if request.method == "POST":
-        form = form_class(request.POST, instance=profile)
+        form = EmployeeEditForm(
+            request.POST,
+            instance=profile_obj,
+            can_change_position=can_change_pos,
+        )
         if form.is_valid():
-            form.save()
-            logger.info(
-                f"EMPLOYEE_EDIT by={request.user.username} edited={profile.user.username}"
-            )
+            profile = form.save()
+
+            new_password = form.cleaned_data.get("new_password")
+            if new_password:
+                profile.user.set_password(new_password)
+                profile.user.save()
+
             return redirect("employees")
     else:
-        form = form_class(instance=profile)
+        form = EmployeeEditForm(
+            instance=profile_obj,
+            can_change_position=can_change_pos,
+        )
 
     return render(
         request,
         "feed/employee_edit.html",
         {
             "form": form,
-            "profile_obj": profile,
-            "can_change_position": can_edit_position,
+            "profile_obj": profile_obj,
+            "can_change_position": can_change_pos,
         },
     )

@@ -2,61 +2,60 @@
 {% block title %}HappyTogether — {{ group.name }}{% endblock %}
 
 {% block content %}
-  <div class="card-soft overflow-hidden">
-    <div class="card-body border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
-      <div class="d-flex align-items-center gap-3">
-        <a class="btn btn-light pill btn-sm" href="{% url 'chat_home' %}">← Назад</a>
-
-        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle"
-             style="width: 46px; height: 46px; font-size: 1.1rem; font-weight: 800; color: #1d4ed8;">
-          👥
-        </div>
-
-        <div>
-          <div class="fw-semibold">{{ group.name }}</div>
-          <div class="small muted">
-            {{ group.description|default:"Групповой чат сотрудников" }}
-          </div>
-          <div class="small muted">
-            Владелец: {{ group.owner.profile.full_name|default:group.owner.username }}
-          </div>
-        </div>
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle"
+           style="width: 52px; height: 52px; font-size: 1.15rem; font-weight: 800; color: #1d4ed8;">
+        👥
       </div>
 
-      {% if is_owner %}
-        <div class="d-flex gap-2 flex-wrap">
-          <a class="btn btn-success pill btn-sm" href="{% url 'group_chat_add_member' group.id %}">
-            ➕ Добавить участника
-          </a>
-          <a class="btn btn-outline-danger pill btn-sm" href="{% url 'group_chat_delete' group.id %}">
-            Удалить группу
-          </a>
+      <div>
+        <h1 class="page-title" style="font-size: 1.45rem; margin-bottom: 4px;">{{ group.name }}</h1>
+        <div class="page-subtitle">
+          {{ group.description|default:"Групповой чат сотрудников" }}
         </div>
-      {% endif %}
+        <div class="small muted mt-1">
+          Владелец: {{ group.owner.profile.full_name|default:group.owner.username }}
+        </div>
+      </div>
     </div>
+  </div>
 
-<div class="card-body border-bottom" style="background:#f8fafc;">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <div class="page-header-actions">
+    <a class="btn btn-light pill btn-sm" href="{% url 'chat_home' %}">
+      ← Назад
+    </a>
+
+    {% if is_owner %}
+      <a class="btn btn-success pill btn-sm" href="{% url 'group_chat_add_member' group.id %}">
+        ➕ Участник
+      </a>
+      <a class="btn btn-outline-danger pill btn-sm" href="{% url 'group_chat_delete' group.id %}">
+        Удалить группу
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card-soft chat-layout-group">
+  <div class="chat-group-topbar">
     <div class="fw-semibold">
       Участники: {{ members|length }}
     </div>
 
-    <button class="btn btn-light pill btn-sm"
-            type="button"
-            id="toggle-members-btn">
+    <button class="btn btn-light pill btn-sm" type="button" id="toggle-members-btn">
       Показать участников
     </button>
   </div>
 
-  <div id="members-panel" class="mt-3" style="display: none;">
+  <div id="members-panel" class="chat-members-panel" style="display: none;">
     <div class="d-flex flex-wrap gap-2">
       {% if members %}
         {% for member in members %}
           <span class="badge text-bg-light text-dark pill border">
             {{ member.user.profile.full_name|default:member.user.username }}
-            {% if member.user == group.owner %}
-              • владелец
-            {% endif %}
+            {% if member.user == group.owner %} • владелец{% endif %}
           </span>
         {% endfor %}
       {% else %}
@@ -81,99 +80,215 @@
       </div>
     {% endif %}
   </div>
-</div>
 
-    <div id="group-chat-box"
-         class="p-3 group-chat-box"
-         style="height: 60vh; overflow-y: auto; background: linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);">
-
-      {% for m in messages %}
-        {% if m.author == user %}
-          <div class="d-flex justify-content-end mb-3">
-            <div style="max-width: 72%;">
-              <div class="d-flex justify-content-end mb-1">
-                <div class="small muted">
-                  {{ m.created_at|date:"d.m.Y H:i" }}
-                </div>
-              </div>
-
-              <div class="rounded-4 px-3 py-2 shadow-sm"
-                   style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
-                {{ m.body|linebreaksbr }}
-              </div>
-
-              <div class="d-flex justify-content-end mt-1">
-                <a class="btn btn-sm btn-outline-danger pill"
-                   href="{% url 'group_message_delete' m.id %}">
-                  Удалить
-                </a>
-              </div>
+  <div id="group-chat-box" class="chat-scroll-area group-chat-box">
+    {% for m in messages %}
+      {% if m.author == user %}
+        <div class="message-row message-row-own">
+          <div class="message-bubble-wrap">
+            <div class="message-bubble message-bubble-own js-message-own"
+                 data-delete-url="{% url 'group_message_delete' m.id %}">
+              <div class="message-text">{{ m.body|linebreaksbr }}</div>
+              <div class="message-time">{{ m.created_at|date:"H:i" }}</div>
             </div>
-          </div>
-        {% else %}
-          <div class="d-flex justify-content-start mb-3">
-            <div style="max-width: 72%;">
-              <div class="small muted mb-1">
-                {{ m.author.profile.full_name|default:m.author.username }}
-                {% if m.author == group.owner %} • владелец{% endif %}
-                • {{ m.created_at|date:"d.m.Y H:i" }}
-              </div>
-
-              <div class="rounded-4 px-3 py-2 shadow-sm"
-                   style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
-                {{ m.body|linebreaksbr }}
-              </div>
-
-              {% if is_owner %}
-                <div class="mt-1">
-                  <a class="btn btn-sm btn-outline-danger pill"
-                     href="{% url 'group_message_delete' m.id %}">
-                    Удалить
-                  </a>
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        {% endif %}
-      {% empty %}
-        <div class="h-100 d-flex align-items-center justify-content-center">
-          <div class="text-center muted">
-            <div class="mb-2" style="font-size: 2rem;">👥</div>
-            <div>Пока сообщений нет</div>
-            <div class="small">Начните общение в группе</div>
           </div>
         </div>
-      {% endfor %}
-    </div>
-
-    <div class="card-body border-top">
-      <form id="group-chat-form" class="d-flex gap-2 align-items-center">
-        {% csrf_token %}
-        <input id="group-chat-message-input"
-               class="form-control"
-               placeholder="Написать сообщение..."
-               autocomplete="off">
-
-        <button id="group-chat-send-button"
-                class="btn btn-success pill px-4"
-                type="submit"
-                disabled>
-          Подключение...
-        </button>
-      </form>
-    </div>
+      {% else %}
+        <div class="message-row message-row-other">
+          <div class="message-bubble-wrap">
+            <div class="message-meta">
+              {{ m.author.profile.full_name|default:m.author.username }}
+              {% if m.author == group.owner %} • владелец{% endif %}
+            </div>
+            <div class="message-bubble message-bubble-other">
+              <div class="message-text">{{ m.body|linebreaksbr }}</div>
+              <div class="message-time">{{ m.created_at|date:"H:i" }}</div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% empty %}
+      <div class="chat-empty-state" id="chat-empty-state">
+        <div class="chat-empty-icon">👥</div>
+        <div>Пока сообщений нет</div>
+        <div class="small">Начните общение в группе</div>
+      </div>
+    {% endfor %}
   </div>
 
+  <div class="chat-typing-bar" id="typing-indicator"></div>
+
+  <div class="chat-bottom-bar">
+    <form id="group-chat-form" class="d-flex gap-2 align-items-center">
+      {% csrf_token %}
+      <input id="group-chat-message-input"
+             class="form-control"
+             placeholder="Написать сообщение..."
+             autocomplete="off">
+
+      <button id="group-chat-send-button"
+              class="btn btn-success pill px-4"
+              type="submit"
+              disabled>
+        Подключение...
+      </button>
+    </form>
+  </div>
+</div>
+
+<div id="group-message-context-menu" class="message-context-menu">
+  <a id="group-message-delete-link" href="#" class="message-context-item">Удалить</a>
+</div>
+
 <style>
-  .group-chat-box {
+  .chat-layout-group {
+    height: calc(100vh - 250px);
+    min-height: 540px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-group-topbar {
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .chat-members-panel {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+  }
+
+  .chat-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    background: linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
 
-  .group-chat-box::-webkit-scrollbar {
-    width: 0;
-    height: 0;
+  .chat-scroll-area::-webkit-scrollbar {
     display: none;
+  }
+
+  .chat-typing-bar {
+    min-height: 24px;
+    padding: 0 16px 8px;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .chat-bottom-bar {
+    border-top: 1px solid #e5e7eb;
+    background: #ffffff;
+    padding: 16px;
+  }
+
+  .message-row {
+    display: flex;
+    margin-bottom: 14px;
+  }
+
+  .message-row-own {
+    justify-content: flex-end;
+  }
+
+  .message-row-other {
+    justify-content: flex-start;
+  }
+
+  .message-bubble-wrap {
+    max-width: 72%;
+  }
+
+  .message-meta {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 5px;
+  }
+
+  .message-bubble {
+    border-radius: 18px;
+    padding: 10px 12px 8px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    position: relative;
+    user-select: none;
+  }
+
+  .message-bubble-own {
+    background: #dbeafe;
+    border: 1px solid #bfdbfe;
+    color: #1e3a8a;
+    cursor: context-menu;
+  }
+
+  .message-bubble-other {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+  }
+
+  .message-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.4;
+    padding-right: 46px;
+  }
+
+  .message-time {
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
+    font-size: 11px;
+    color: rgba(15, 23, 42, 0.52);
+  }
+
+  .chat-empty-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #64748b;
+    text-align: center;
+  }
+
+  .chat-empty-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .message-context-menu {
+    position: fixed;
+    display: none;
+    min-width: 130px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.12);
+    padding: 8px;
+    z-index: 9999;
+  }
+
+  .message-context-item {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: #dc2626;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .message-context-item:hover {
+    background: #fef2f2;
+    color: #b91c1c;
   }
 
   .chat-message-appear {
@@ -190,21 +305,46 @@
       transform: translateY(0);
     }
   }
+
+  @media (max-width: 768px) {
+    .chat-layout-group {
+      height: calc(100vh - 220px);
+      min-height: 460px;
+    }
+
+    .message-bubble-wrap {
+      max-width: 84%;
+    }
+
+    .chat-group-topbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
 </style>
 
 <script>
   const groupId = "{{ group.id }}";
-  const isOwner = {{ is_owner|yesno:"true,false" }};
-
   const chatBox = document.getElementById("group-chat-box");
   const chatForm = document.getElementById("group-chat-form");
   const chatInput = document.getElementById("group-chat-message-input");
   const sendButton = document.getElementById("group-chat-send-button");
+  const typingIndicator = document.getElementById("typing-indicator");
+
+  const toggleMembersBtn = document.getElementById("toggle-members-btn");
+  const membersPanel = document.getElementById("members-panel");
+
+  const contextMenu = document.getElementById("group-message-context-menu");
+  const deleteLink = document.getElementById("group-message-delete-link");
 
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   const socketUrl = protocol + "://" + window.location.host + "/ws/chat/group/" + groupId + "/";
 
   let chatSocket = null;
+  let longPressTimer = null;
+  let typingTimer = null;
+  let typingVisibleTimer = null;
+  let iAmTyping = false;
 
   function isNearBottom() {
     return chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
@@ -222,26 +362,55 @@
     return div.innerHTML;
   }
 
+  function hideContextMenu() {
+    contextMenu.style.display = "none";
+  }
+
+  function showContextMenu(x, y, deleteUrl) {
+    deleteLink.href = deleteUrl;
+    contextMenu.style.display = "block";
+    contextMenu.style.left = x + "px";
+    contextMenu.style.top = y + "px";
+  }
+
+  function bindOwnMessageMenus() {
+    document.querySelectorAll(".js-message-own").forEach((bubble) => {
+      bubble.oncontextmenu = function(e) {
+        e.preventDefault();
+        showContextMenu(e.clientX, e.clientY, bubble.dataset.deleteUrl);
+      };
+
+      bubble.onpointerdown = function(e) {
+        if (e.pointerType === "touch") {
+          longPressTimer = setTimeout(() => {
+            showContextMenu(e.clientX || 120, e.clientY || 120, bubble.dataset.deleteUrl);
+          }, 500);
+        }
+      };
+
+      bubble.onpointerup = function() {
+        clearTimeout(longPressTimer);
+      };
+
+      bubble.onpointerleave = function() {
+        clearTimeout(longPressTimer);
+      };
+    });
+  }
+
+  function hideEmptyState() {
+    const emptyState = document.getElementById("chat-empty-state");
+    if (emptyState) emptyState.remove();
+  }
+
   function createOwnMessage(data) {
     return `
-      <div class="d-flex justify-content-end mb-3 chat-message-appear">
-        <div style="max-width: 72%;">
-          <div class="d-flex justify-content-end mb-1">
-            <div class="small muted">
-              ${data.created_at}
-            </div>
-          </div>
-
-          <div class="rounded-4 px-3 py-2 shadow-sm"
-               style="background: #dbeafe; border: 1px solid #bfdbfe; color: #1e3a8a;">
-            ${escapeHtml(data.body).replace(/\n/g, "<br>")}
-          </div>
-
-          <div class="d-flex justify-content-end mt-1">
-            <a class="btn btn-sm btn-outline-danger pill"
-               href="/chat/group/message/${data.message_id}/delete/">
-              Удалить
-            </a>
+      <div class="message-row message-row-own chat-message-appear">
+        <div class="message-bubble-wrap">
+          <div class="message-bubble message-bubble-own js-message-own"
+               data-delete-url="/chat/group/message/${data.message_id}/delete/">
+            <div class="message-text">${escapeHtml(data.body).replace(/\n/g, "<br>")}</div>
+            <div class="message-time">${data.time_only || ""}</div>
           </div>
         </div>
       </div>
@@ -250,28 +419,15 @@
 
   function createOtherMessage(data) {
     const ownerMark = data.is_owner_author ? " • владелец" : "";
-    const deleteButton = isOwner
-      ? `<div class="mt-1">
-           <a class="btn btn-sm btn-outline-danger pill"
-              href="/chat/group/message/${data.message_id}/delete/">
-             Удалить
-           </a>
-         </div>`
-      : "";
 
     return `
-      <div class="d-flex justify-content-start mb-3 chat-message-appear">
-        <div style="max-width: 72%;">
-          <div class="small muted mb-1">
-            ${escapeHtml(data.author)}${ownerMark} • ${data.created_at}
+      <div class="message-row message-row-other chat-message-appear">
+        <div class="message-bubble-wrap">
+          <div class="message-meta">${escapeHtml(data.author)}${ownerMark}</div>
+          <div class="message-bubble message-bubble-other">
+            <div class="message-text">${escapeHtml(data.body).replace(/\n/g, "<br>")}</div>
+            <div class="message-time">${data.time_only || ""}</div>
           </div>
-
-          <div class="rounded-4 px-3 py-2 shadow-sm"
-               style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;">
-            ${escapeHtml(data.body).replace(/\n/g, "<br>")}
-          </div>
-
-          ${deleteButton}
         </div>
       </div>
     `;
@@ -279,11 +435,7 @@
 
   function appendMessage(data) {
     const shouldStickToBottom = isNearBottom();
-
-    const emptyState = chatBox.querySelector(".text-center.muted");
-    if (emptyState) {
-      chatBox.innerHTML = "";
-    }
+    hideEmptyState();
 
     if (data.is_own) {
       chatBox.insertAdjacentHTML("beforeend", createOwnMessage(data));
@@ -291,9 +443,41 @@
       chatBox.insertAdjacentHTML("beforeend", createOtherMessage(data));
     }
 
+    bindOwnMessageMenus();
+
     if (shouldStickToBottom) {
       scrollToBottom(true);
     }
+  }
+
+  function showTyping(authorName) {
+    typingIndicator.textContent = `${authorName} печатает...`;
+    clearTimeout(typingVisibleTimer);
+    typingVisibleTimer = setTimeout(() => {
+      typingIndicator.textContent = "";
+    }, 1400);
+  }
+
+  function sendTyping(isTyping) {
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) return;
+
+    chatSocket.send(JSON.stringify({
+      type: "typing",
+      is_typing: isTyping
+    }));
+  }
+
+  function handleInputTyping() {
+    if (!iAmTyping) {
+      iAmTyping = true;
+      sendTyping(true);
+    }
+
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      iAmTyping = false;
+      sendTyping(false);
+    }, 900);
   }
 
   function connectSocket() {
@@ -306,6 +490,14 @@
 
     chatSocket.onmessage = function(e) {
       const data = JSON.parse(e.data);
+
+      if (data.event === "typing") {
+        if (!data.is_own && data.is_typing) {
+          showTyping(data.author);
+        }
+        return;
+      }
+
       appendMessage(data);
     };
 
@@ -331,13 +523,15 @@
       return;
     }
 
-    chatSocket.send(JSON.stringify({
-      body: message
-    }));
-
+    chatSocket.send(JSON.stringify({ body: message }));
     chatInput.value = "";
+    typingIndicator.textContent = "";
+    iAmTyping = false;
+    sendTyping(false);
     chatInput.focus();
   });
+
+  chatInput.addEventListener("input", handleInputTyping);
 
   chatInput.addEventListener("keydown", function(e) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -345,23 +539,34 @@
       chatForm.requestSubmit();
     }
   });
-  const toggleMembersBtn = document.getElementById("toggle-members-btn");
-const membersPanel = document.getElementById("members-panel");
 
-if (toggleMembersBtn && membersPanel) {
-  toggleMembersBtn.addEventListener("click", function() {
-    const isHidden = membersPanel.style.display === "none";
+  if (toggleMembersBtn && membersPanel) {
+    toggleMembersBtn.addEventListener("click", function() {
+      const isHidden = membersPanel.style.display === "none";
 
-    if (isHidden) {
-      membersPanel.style.display = "block";
-      toggleMembersBtn.innerText = "Скрыть участников";
-    } else {
-      membersPanel.style.display = "none";
-      toggleMembersBtn.innerText = "Показать участников";
+      if (isHidden) {
+        membersPanel.style.display = "block";
+        toggleMembersBtn.innerText = "Скрыть участников";
+      } else {
+        membersPanel.style.display = "none";
+        toggleMembersBtn.innerText = "Показать участников";
+      }
+
+      setTimeout(() => scrollToBottom(false), 50);
+    });
+  }
+
+  document.addEventListener("click", function(e) {
+    if (!contextMenu.contains(e.target)) {
+      hideContextMenu();
     }
   });
-}
+
+  document.addEventListener("scroll", hideContextMenu, true);
+  window.addEventListener("resize", hideContextMenu);
+
   connectSocket();
+  bindOwnMessageMenus();
   scrollToBottom(true);
 </script>
 {% endblock %}

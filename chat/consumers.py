@@ -1,15 +1,25 @@
 import json
 
-from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+from django.utils import timezone
 
 from .models import (
-    PrivateChat,
-    PrivateMessage,
     GroupChat,
     GroupChatMember,
     GroupChatMessage,
+    PrivateChat,
+    PrivateMessage,
 )
+
+
+def safe_full_name(user):
+    try:
+        if hasattr(user, "profile") and user.profile.full_name:
+            return user.profile.full_name
+    except Exception:
+        pass
+    return user.username
 
 
 class PrivateChatConsumer(AsyncWebsocketConsumer):
@@ -28,25 +38,32 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
-            body = data.get("body", "").strip()
             user = self.scope["user"]
 
+            event_type = data.get("type", "message")
+
+            if event_type == "typing":
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "private_typing_event",
+                        "author_username": user.username,
+                        "author_display": safe_full_name(user),
+                        "is_typing": bool(data.get("is_typing", False)),
+                    }
+                )
+                return
+
+            body = data.get("body", "").strip()
             if not body:
                 return
 
@@ -57,9 +74,11 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "private_chat_message",
                     "message_id": message["id"],
-                    "author": message["author"],
+                    "author_username": message["author_username"],
+                    "author_display": message["author_display"],
                     "body": message["body"],
                     "created_at": message["created_at"],
+                    "time_only": message["time_only"],
                 }
             )
         except Exception as e:
@@ -67,14 +86,28 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
 
     async def private_chat_message(self, event):
         user = self.scope["user"]
-        is_own = event["author"] == user.username
+        is_own = event["author_username"] == user.username
 
         await self.send(text_data=json.dumps({
+            "event": "message",
             "message_id": event["message_id"],
-            "author": event["author"],
+            "author": event["author_display"],
+            "author_username": event["author_username"],
             "body": event["body"],
             "created_at": event["created_at"],
+            "time_only": event["time_only"],
             "is_own": is_own,
+        }))
+
+    async def private_typing_event(self, event):
+        user = self.scope["user"]
+
+        await self.send(text_data=json.dumps({
+            "event": "typing",
+            "author": event["author_display"],
+            "author_username": event["author_username"],
+            "is_typing": event["is_typing"],
+            "is_own": event["author_username"] == user.username,
         }))
 
     @database_sync_to_async
@@ -93,11 +126,16 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
             author=user,
             body=body,
         )
+
+        local_dt = timezone.localtime(message.created_at)
+
         return {
             "id": message.id,
-            "author": message.author.username,
+            "author_username": message.author.username,
+            "author_display": safe_full_name(message.author),
             "body": message.body,
-            "created_at": message.created_at.strftime("%d.%m.%Y %H:%M"),
+            "created_at": local_dt.strftime("%d.%m.%Y %H:%M"),
+            "time_only": local_dt.strftime("%H:%M"),
         }
 
 
@@ -117,25 +155,32 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
-            body = data.get("body", "").strip()
             user = self.scope["user"]
 
+            event_type = data.get("type", "message")
+
+            if event_type == "typing":
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        "type": "group_typing_event",
+                        "author_username": user.username,
+                        "author_display": safe_full_name(user),
+                        "is_typing": bool(data.get("is_typing", False)),
+                    }
+                )
+                return
+
+            body = data.get("body", "").strip()
             if not body:
                 return
 
@@ -146,9 +191,11 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "group_chat_message",
                     "message_id": message["id"],
-                    "author": message["author"],
+                    "author_username": message["author_username"],
+                    "author_display": message["author_display"],
                     "body": message["body"],
                     "created_at": message["created_at"],
+                    "time_only": message["time_only"],
                     "is_owner_author": message["is_owner_author"],
                 }
             )
@@ -157,15 +204,29 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
 
     async def group_chat_message(self, event):
         user = self.scope["user"]
-        is_own = event["author"] == user.username
+        is_own = event["author_username"] == user.username
 
         await self.send(text_data=json.dumps({
+            "event": "message",
             "message_id": event["message_id"],
-            "author": event["author"],
+            "author": event["author_display"],
+            "author_username": event["author_username"],
             "body": event["body"],
             "created_at": event["created_at"],
+            "time_only": event["time_only"],
             "is_own": is_own,
             "is_owner_author": event["is_owner_author"],
+        }))
+
+    async def group_typing_event(self, event):
+        user = self.scope["user"]
+
+        await self.send(text_data=json.dumps({
+            "event": "typing",
+            "author": event["author_display"],
+            "author_username": event["author_username"],
+            "is_typing": event["is_typing"],
+            "is_own": event["author_username"] == user.username,
         }))
 
     @database_sync_to_async
@@ -183,10 +244,15 @@ class GroupChatConsumer(AsyncWebsocketConsumer):
             author=user,
             body=body,
         )
+
+        local_dt = timezone.localtime(message.created_at)
+
         return {
             "id": message.id,
-            "author": message.author.username,
+            "author_username": message.author.username,
+            "author_display": safe_full_name(message.author),
             "body": message.body,
-            "created_at": message.created_at.strftime("%d.%m.%Y %H:%M"),
+            "created_at": local_dt.strftime("%d.%m.%Y %H:%M"),
+            "time_only": local_dt.strftime("%H:%M"),
             "is_owner_author": message.author == group.owner,
         }

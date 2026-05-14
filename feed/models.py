@@ -49,6 +49,8 @@ class Profile(models.Model):
         ("security", "Служба безопасности (СБ)"),
         ("cashier", "Кассир"),
         ("loss_prevention", "Специалист по предотвращению потерь"),
+        ("sysadmin", "Системный администратор"),
+        ("worker", "Рабочий"),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
