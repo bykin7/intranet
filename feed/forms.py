@@ -261,15 +261,17 @@ class EmployeeCreateForm(forms.Form):
 
 class EmployeeEditForm(forms.ModelForm):
     new_password = forms.CharField(
-        label="Новый пароль",
-        required=True,
-        widget=forms.PasswordInput(
-            attrs={
-                "class": "form-control",
-                "placeholder": "Оставьте пустым, если пароль менять не нужно",
-            }
-        ),
-    )
+    label="Новый пароль",
+    required=False,
+    widget=forms.PasswordInput(
+        attrs={
+            "class": "form-control",
+            "placeholder": "Оставьте пустым, если пароль менять не нужно",
+            "autocomplete": "new-password",
+        }
+    ),
+    help_text="Оставьте поле пустым, если пароль менять не нужно.",
+)
 
     class Meta:
         model = Profile
