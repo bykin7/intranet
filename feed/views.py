@@ -43,15 +43,14 @@ logger = logging.getLogger("happytogether")
 
 def create_store_worker_account(store):
     username = f"store_{store.id}"
-    default_password = f"store{store.id}123"
+    default_password = "12345asdASD"
 
     user, created = User.objects.get_or_create(username=username)
 
-    if created:
-        user.set_password(default_password)
-
     user.first_name = "Рабочий"
     user.last_name = store.name
+    user.is_active = True
+    user.set_password(default_password)
     user.save()
 
     profile, _ = Profile.objects.get_or_create(user=user)
