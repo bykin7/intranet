@@ -1,0 +1,83 @@
+{% extends "core/base.html" %}
+{% block title %}Альфа-М Portal — Распределение сотрудников{% endblock %}
+
+{% block content %}
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <h1 class="page-title">Распределение сотрудников</h1>
+    <div class="page-subtitle">
+      {{ store.name }}{% if store.address %} — {{ store.address }}{% endif %}
+    </div>
+  </div>
+
+  <div class="page-header-actions">
+    <a class="btn btn-light pill" href="{% url 'store_detail' store.id %}">
+      ← Назад к магазину
+    </a>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-6">
+      <div class="card-soft h-100">
+        <div class="card-body">
+          <h5 class="mb-2">Сотрудники одного магазина</h5>
+
+          <div class="muted small mb-3">
+            Здесь выбираются администратор, кассир, специалист ОПП и рабочий.
+            После сохранения они будут привязаны к этому магазину как к основному.
+          </div>
+
+          <div class="border rounded-4 p-3 employee-check-list">
+            {{ form.main_employees }}
+          </div>
+
+          {% if form.main_employees.errors %}
+            <div class="text-danger small mt-2">
+              {{ form.main_employees.errors|striptags }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card-soft h-100">
+        <div class="card-body">
+          <h5 class="mb-2">Супервайзеры и служба безопасности</h5>
+
+          <div class="muted small mb-3">
+            Эти сотрудники могут быть привязаны сразу к нескольким магазинам.
+            Магазин будет добавлен в список доступных магазинов.
+          </div>
+
+          <div class="border rounded-4 p-3 employee-check-list">
+            {{ form.managers }}
+          </div>
+
+          {% if form.managers.errors %}
+            <div class="text-danger small mt-2">
+              {{ form.managers.errors|striptags }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-soft mt-4">
+    <div class="card-body d-flex gap-2 justify-content-end">
+      <a class="btn btn-outline-secondary pill" href="{% url 'store_detail' store.id %}">
+        Отмена
+      </a>
+
+      <button class="btn btn-success pill" type="submit">
+        Сохранить распределение
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

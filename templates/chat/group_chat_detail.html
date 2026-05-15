@@ -1,7 +1,8 @@
 {% extends "core/base.html" %}
-{% block title %}HappyTogether — {{ group.name }}{% endblock %}
+{% block title %}Альфа-М Portal — {{ group.name }}{% endblock %}
 
 {% block content %}
+
 <div class="page-header-unified">
   <div class="page-header-main">
     <div class="d-flex align-items-center gap-3">
@@ -11,12 +12,16 @@
       </div>
 
       <div>
-        <h1 class="page-title" style="font-size: 1.45rem; margin-bottom: 4px;">{{ group.name }}</h1>
+        <h1 class="page-title" style="font-size: 1.45rem; margin-bottom: 4px;">
+          {{ group.name }}
+        </h1>
+
         <div class="page-subtitle">
           {{ group.description|default:"Групповой чат сотрудников" }}
         </div>
+
         <div class="small muted mt-1">
-          Владелец: {{ group.owner.profile.full_name|default:group.owner.username }}
+          Владелец: {{ group.owner.profile.full_name|default:"Без ФИО" }}
         </div>
       </div>
     </div>
@@ -31,6 +36,7 @@
       <a class="btn btn-success pill btn-sm" href="{% url 'group_chat_add_member' group.id %}">
         ➕ Участник
       </a>
+
       <a class="btn btn-outline-danger pill btn-sm" href="{% url 'group_chat_delete' group.id %}">
         Удалить группу
       </a>
@@ -39,9 +45,15 @@
 </div>
 
 <div class="card-soft chat-layout-group">
+
   <div class="chat-group-topbar">
-    <div class="fw-semibold">
-      Участники: {{ members|length }}
+    <div>
+      <div class="fw-semibold">
+        Участники: {{ members|length }}
+      </div>
+      <div class="small muted">
+        Сообщения и фотографии группы
+      </div>
     </div>
 
     <button class="btn btn-light pill btn-sm" type="button" id="toggle-members-btn">
@@ -54,7 +66,7 @@
       {% if members %}
         {% for member in members %}
           <span class="badge text-bg-light text-dark pill border">
-            {{ member.user.profile.full_name|default:member.user.username }}
+            {{ member.user.profile.full_name|default:"Без ФИО" }}
             {% if member.user == group.owner %} • владелец{% endif %}
           </span>
         {% endfor %}
@@ -65,14 +77,16 @@
 
     {% if is_owner %}
       <div class="mt-3">
-        <div class="small muted mb-2">Управление участниками</div>
+        <div class="small muted mb-2">
+          Управление участниками
+        </div>
 
         <div class="d-flex flex-wrap gap-2">
           {% for member in members %}
             {% if member.user != group.owner %}
               <a class="btn btn-sm btn-outline-danger pill"
                  href="{% url 'group_chat_remove_member' group.id member.id %}">
-                Удалить {{ member.user.profile.full_name|default:member.user.username }}
+                Удалить {{ member.user.profile.full_name|default:"Без ФИО" }}
               </a>
             {% endif %}
           {% endfor %}
@@ -86,9 +100,57 @@
       {% if m.author == user %}
         <div class="message-row message-row-own">
           <div class="message-bubble-wrap">
-            <div class="message-bubble message-bubble-own js-message-own"
-                 data-delete-url="{% url 'group_message_delete' m.id %}">
-              <div class="message-text">{{ m.body|linebreaksbr }}</div>
+            <div class="message-bubble message-bubble-own js-message-with-delete">
+
+              <div class="message-delete-popover">
+                <button
+                  type="button"
+                  class="message-delete-popover-btn js-open-delete-modal"
+                  data-delete-url="{% url 'group_message_delete' m.id %}"
+                  data-message-preview="{% if m.body %}{{ m.body|striptags|truncatechars:90 }}{% else %}Сообщение с фото{% endif %}"
+                >
+                  Удалить
+                </button>
+              </div>
+
+              {% if m.body %}
+                <div class="message-text">{{ m.body|linebreaksbr }}</div>
+              {% endif %}
+
+              {% if m.images.all %}
+                <div class="chat-message-images">
+                  {% for img in m.images.all %}
+                    <button
+                      type="button"
+                      class="chat-message-image-link group-photo-open"
+                      data-src="{{ img.image.url }}"
+                    >
+                      <img
+                        src="{{ img.image.url }}"
+                        class="chat-message-image"
+                        alt="Фото сообщения"
+                      >
+                    </button>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              {% if m.image %}
+                <div class="chat-message-images">
+                  <button
+                    type="button"
+                    class="chat-message-image-link group-photo-open"
+                    data-src="{{ m.image.url }}"
+                  >
+                    <img
+                      src="{{ m.image.url }}"
+                      class="chat-message-image"
+                      alt="Фото сообщения"
+                    >
+                  </button>
+                </div>
+              {% endif %}
+
               <div class="message-time">{{ m.created_at|date:"H:i" }}</div>
             </div>
           </div>
@@ -97,11 +159,63 @@
         <div class="message-row message-row-other">
           <div class="message-bubble-wrap">
             <div class="message-meta">
-              {{ m.author.profile.full_name|default:m.author.username }}
+              {{ m.author.profile.full_name|default:"Без ФИО" }}
               {% if m.author == group.owner %} • владелец{% endif %}
             </div>
-            <div class="message-bubble message-bubble-other">
-              <div class="message-text">{{ m.body|linebreaksbr }}</div>
+
+            <div class="message-bubble message-bubble-other {% if is_owner %}js-message-with-delete{% endif %}">
+
+              {% if is_owner %}
+                <div class="message-delete-popover">
+                  <button
+                    type="button"
+                    class="message-delete-popover-btn js-open-delete-modal"
+                    data-delete-url="{% url 'group_message_delete' m.id %}"
+                    data-message-preview="{% if m.body %}{{ m.body|striptags|truncatechars:90 }}{% else %}Сообщение с фото{% endif %}"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              {% endif %}
+
+              {% if m.body %}
+                <div class="message-text">{{ m.body|linebreaksbr }}</div>
+              {% endif %}
+
+              {% if m.images.all %}
+                <div class="chat-message-images">
+                  {% for img in m.images.all %}
+                    <button
+                      type="button"
+                      class="chat-message-image-link group-photo-open"
+                      data-src="{{ img.image.url }}"
+                    >
+                      <img
+                        src="{{ img.image.url }}"
+                        class="chat-message-image"
+                        alt="Фото сообщения"
+                      >
+                    </button>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              {% if m.image %}
+                <div class="chat-message-images">
+                  <button
+                    type="button"
+                    class="chat-message-image-link group-photo-open"
+                    data-src="{{ m.image.url }}"
+                  >
+                    <img
+                      src="{{ m.image.url }}"
+                      class="chat-message-image"
+                      alt="Фото сообщения"
+                    >
+                  </button>
+                </div>
+              {% endif %}
+
               <div class="message-time">{{ m.created_at|date:"H:i" }}</div>
             </div>
           </div>
@@ -119,25 +233,87 @@
   <div class="chat-typing-bar" id="typing-indicator"></div>
 
   <div class="chat-bottom-bar">
-    <form id="group-chat-form" class="d-flex gap-2 align-items-center">
+    <form id="group-chat-form"
+          method="post"
+          enctype="multipart/form-data"
+          class="d-flex gap-2 align-items-center">
       {% csrf_token %}
+
+      <label class="chat-image-button" title="Прикрепить фотографии">
+        📎
+        <input
+          id="group-chat-images-input"
+          type="file"
+          name="images"
+          accept="image/*"
+          multiple
+          hidden
+        >
+      </label>
+
       <input id="group-chat-message-input"
+             name="body"
              class="form-control"
              placeholder="Написать сообщение..."
              autocomplete="off">
 
       <button id="group-chat-send-button"
               class="btn btn-success pill px-4"
-              type="submit"
-              disabled>
-        Подключение...
+              type="submit">
+        Отправить
       </button>
+    </form>
+
+    <div id="group-selected-files" class="chat-selected-files"></div>
+  </div>
+</div>
+
+<div class="chat-delete-modal" id="chat-delete-modal">
+  <div class="chat-delete-dialog">
+    <div class="chat-delete-icon">🗑️</div>
+
+    <h2 class="chat-delete-title">
+      Удалить сообщение?
+    </h2>
+
+    <div class="chat-delete-text">
+      Сообщение будет удалено из группового чата.
+    </div>
+
+    <div class="chat-delete-preview" id="chat-delete-preview"></div>
+
+    <form id="chat-delete-form" method="post" action="">
+      {% csrf_token %}
+
+      <div class="chat-delete-actions">
+        <button type="button" class="btn btn-light pill" id="chat-delete-cancel">
+          Отмена
+        </button>
+
+        <button type="submit" class="btn btn-danger pill">
+          Удалить
+        </button>
+      </div>
     </form>
   </div>
 </div>
 
-<div id="group-message-context-menu" class="message-context-menu">
-  <a id="group-message-delete-link" href="#" class="message-context-item">Удалить</a>
+<div class="chat-lightbox" id="group-lightbox">
+  <button type="button" class="chat-lightbox-close" id="group-lightbox-close">
+    ×
+  </button>
+
+  <button type="button" class="chat-lightbox-nav chat-lightbox-prev" id="group-lightbox-prev">
+    ‹
+  </button>
+
+  <div class="chat-lightbox-content">
+    <img src="" alt="Фото сообщения" id="group-lightbox-image">
+  </div>
+
+  <button type="button" class="chat-lightbox-nav chat-lightbox-next" id="group-lightbox-next">
+    ›
+  </button>
 </div>
 
 <style>
@@ -226,13 +402,17 @@
     background: #dbeafe;
     border: 1px solid #bfdbfe;
     color: #1e3a8a;
-    cursor: context-menu;
+    cursor: pointer;
   }
 
   .message-bubble-other {
     background: #ffffff;
     border: 1px solid #e5e7eb;
     color: #1f2937;
+  }
+
+  .message-bubble.js-message-with-delete {
+    cursor: pointer;
   }
 
   .message-text {
@@ -250,6 +430,129 @@
     color: rgba(15, 23, 42, 0.52);
   }
 
+  .message-delete-popover {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 10px);
+    transform: translateY(-50%);
+    display: none;
+    z-index: 20;
+  }
+
+  .message-row-other .message-delete-popover {
+    left: calc(100% + 10px);
+    right: auto;
+  }
+
+  .message-bubble.is-delete-open .message-delete-popover {
+    display: block;
+  }
+
+  .message-delete-popover-btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 13px;
+    background: #ffffff;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    white-space: nowrap;
+  }
+
+  .message-delete-popover-btn:hover {
+    background: #dc2626;
+    color: #ffffff;
+  }
+
+  .chat-delete-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .chat-delete-modal.is-open {
+    display: flex;
+  }
+
+  .chat-delete-dialog {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 26px;
+    padding: 28px;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+    text-align: center;
+    animation: deleteModalIn 0.18s ease;
+  }
+
+  .chat-delete-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: #fef2f2;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.65rem;
+  }
+
+  .chat-delete-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .chat-delete-text {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 0.95rem;
+  }
+
+  .chat-delete-preview {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #475569;
+    font-size: 0.9rem;
+    text-align: left;
+    word-break: break-word;
+    max-height: 110px;
+    overflow: hidden;
+  }
+
+  .chat-delete-actions {
+    margin-top: 22px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  @keyframes deleteModalIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .chat-empty-state {
     height: 100%;
     display: flex;
@@ -265,30 +568,132 @@
     margin-bottom: 8px;
   }
 
-  .message-context-menu {
-    position: fixed;
-    display: none;
-    min-width: 130px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+  .chat-image-button {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    border: 1px solid #dbe3ef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.16s ease;
+    font-size: 1.1rem;
+  }
+
+  .chat-image-button:hover {
+    background: #e0f2fe;
+    border-color: #93c5fd;
+  }
+
+  .chat-selected-files {
+    margin-top: 8px;
+    padding-left: 54px;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .chat-message-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    padding-right: 46px;
+  }
+
+  .chat-message-image-link {
+    height: 110px;
+    border: 0;
     border-radius: 14px;
-    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.12);
-    padding: 8px;
-    z-index: 9999;
+    overflow: hidden;
+    background: #f8fafc;
+    padding: 6px;
+    cursor: zoom-in;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .message-context-item {
+  .chat-message-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     display: block;
-    padding: 10px 12px;
     border-radius: 10px;
-    color: #dc2626;
-    text-decoration: none;
-    font-weight: 600;
+    background: #ffffff;
   }
 
-  .message-context-item:hover {
-    background: #fef2f2;
-    color: #b91c1c;
+  .chat-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+  }
+
+  .chat-lightbox.is-open {
+    display: flex;
+  }
+
+  .chat-lightbox-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-lightbox-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .chat-lightbox-close {
+    position: fixed;
+    top: 22px;
+    right: 28px;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .chat-lightbox-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 54px;
+    height: 54px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+    font-size: 2.4rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .chat-lightbox-prev {
+    left: 28px;
+  }
+
+  .chat-lightbox-next {
+    right: 28px;
   }
 
   .chat-message-appear {
@@ -320,31 +725,112 @@
       flex-direction: column;
       align-items: flex-start;
     }
+
+    #group-chat-form {
+      flex-wrap: wrap;
+    }
+
+    .chat-selected-files {
+      padding-left: 0;
+    }
+
+    .chat-message-images {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .chat-message-image-link {
+      height: 100px;
+    }
+
+    .message-delete-popover {
+      top: -34px;
+      right: 0;
+      transform: none;
+    }
+
+    .message-row-other .message-delete-popover {
+      left: 0;
+      right: auto;
+    }
+
+    .chat-delete-dialog {
+      padding: 24px 20px;
+      border-radius: 22px;
+    }
+
+    .chat-lightbox {
+      padding: 16px;
+    }
+
+    .chat-lightbox-close {
+      top: 12px;
+      right: 12px;
+      width: 42px;
+      height: 42px;
+      font-size: 1.7rem;
+    }
+
+    .chat-lightbox-nav {
+      width: 42px;
+      height: 42px;
+      font-size: 2rem;
+    }
+
+    .chat-lightbox-prev {
+      left: 10px;
+    }
+
+    .chat-lightbox-next {
+      right: 10px;
+    }
   }
 </style>
 
 <script>
   const groupId = "{{ group.id }}";
+  const currentUserIsGroupOwner = "{{ is_owner|yesno:'true,false' }}" === "true";
+
   const chatBox = document.getElementById("group-chat-box");
   const chatForm = document.getElementById("group-chat-form");
   const chatInput = document.getElementById("group-chat-message-input");
+  const chatImagesInput = document.getElementById("group-chat-images-input");
+  const selectedFilesText = document.getElementById("group-selected-files");
   const sendButton = document.getElementById("group-chat-send-button");
   const typingIndicator = document.getElementById("typing-indicator");
 
   const toggleMembersBtn = document.getElementById("toggle-members-btn");
   const membersPanel = document.getElementById("members-panel");
 
-  const contextMenu = document.getElementById("group-message-context-menu");
-  const deleteLink = document.getElementById("group-message-delete-link");
+  const deleteModal = document.getElementById("chat-delete-modal");
+  const deleteForm = document.getElementById("chat-delete-form");
+  const deleteCancel = document.getElementById("chat-delete-cancel");
+  const deletePreview = document.getElementById("chat-delete-preview");
 
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   const socketUrl = protocol + "://" + window.location.host + "/ws/chat/group/" + groupId + "/";
 
   let chatSocket = null;
+  let reconnectTimer = null;
   let longPressTimer = null;
   let typingTimer = null;
   let typingVisibleTimer = null;
   let iAmTyping = false;
+
+  function hasSelectedImages() {
+    return chatImagesInput && chatImagesInput.files && chatImagesInput.files.length > 0;
+  }
+
+  function updateSelectedFilesText() {
+    if (!selectedFilesText || !chatImagesInput) return;
+
+    const count = chatImagesInput.files.length;
+
+    if (count > 0) {
+      selectedFilesText.textContent = `Выбрано фото: ${count}`;
+    } else {
+      selectedFilesText.textContent = "";
+    }
+  }
 
   function isNearBottom() {
     return chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
@@ -358,32 +844,77 @@
 
   function escapeHtml(text) {
     const div = document.createElement("div");
-    div.innerText = text;
+    div.innerText = text || "";
     return div.innerHTML;
   }
 
-  function hideContextMenu() {
-    contextMenu.style.display = "none";
+  function closeAllDeletePopovers() {
+    document.querySelectorAll(".message-bubble.is-delete-open").forEach((bubble) => {
+      bubble.classList.remove("is-delete-open");
+    });
   }
 
-  function showContextMenu(x, y, deleteUrl) {
-    deleteLink.href = deleteUrl;
-    contextMenu.style.display = "block";
-    contextMenu.style.left = x + "px";
-    contextMenu.style.top = y + "px";
+  function openDeleteModal(deleteUrl, previewText) {
+    if (!deleteModal || !deleteForm) return;
+
+    deleteForm.action = deleteUrl;
+    deletePreview.textContent = previewText || "Сообщение с фото";
+    closeAllDeletePopovers();
+    deleteModal.classList.add("is-open");
+    document.body.style.overflow = "hidden";
   }
 
-  function bindOwnMessageMenus() {
-    document.querySelectorAll(".js-message-own").forEach((bubble) => {
+  function closeDeleteModal() {
+    if (!deleteModal || !deleteForm) return;
+
+    deleteModal.classList.remove("is-open");
+    deleteForm.action = "";
+    deletePreview.textContent = "";
+    document.body.style.overflow = "";
+  }
+
+  function bindDeleteMessageMenus() {
+    document.querySelectorAll(".js-message-with-delete").forEach((bubble) => {
+      bubble.onclick = function(e) {
+        if (
+          e.target.closest(".message-delete-popover") ||
+          e.target.closest(".group-photo-open")
+        ) {
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isOpen = bubble.classList.contains("is-delete-open");
+        closeAllDeletePopovers();
+
+        if (!isOpen) {
+          bubble.classList.add("is-delete-open");
+        }
+      };
+
       bubble.oncontextmenu = function(e) {
         e.preventDefault();
-        showContextMenu(e.clientX, e.clientY, bubble.dataset.deleteUrl);
+        e.stopPropagation();
+
+        const isOpen = bubble.classList.contains("is-delete-open");
+        closeAllDeletePopovers();
+
+        if (!isOpen) {
+          bubble.classList.add("is-delete-open");
+        }
       };
 
       bubble.onpointerdown = function(e) {
         if (e.pointerType === "touch") {
           longPressTimer = setTimeout(() => {
-            showContextMenu(e.clientX || 120, e.clientY || 120, bubble.dataset.deleteUrl);
+            const isOpen = bubble.classList.contains("is-delete-open");
+            closeAllDeletePopovers();
+
+            if (!isOpen) {
+              bubble.classList.add("is-delete-open");
+            }
           }, 500);
         }
       };
@@ -396,6 +927,18 @@
         clearTimeout(longPressTimer);
       };
     });
+
+    document.querySelectorAll(".js-open-delete-modal").forEach((button) => {
+      button.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        openDeleteModal(
+          button.dataset.deleteUrl,
+          button.dataset.messagePreview
+        );
+      };
+    });
   }
 
   function hideEmptyState() {
@@ -403,12 +946,31 @@
     if (emptyState) emptyState.remove();
   }
 
+  function createDeleteMarkup(deleteUrl, previewText) {
+    return `
+      <div class="message-delete-popover">
+        <button
+          type="button"
+          class="message-delete-popover-btn js-open-delete-modal"
+          data-delete-url="${deleteUrl}"
+          data-message-preview="${previewText}"
+        >
+          Удалить
+        </button>
+      </div>
+    `;
+  }
+
   function createOwnMessage(data) {
+    const previewText = escapeHtml(data.body || "Сообщение");
+    const deleteUrl = `/chat/group/message/${data.message_id}/delete/`;
+
     return `
       <div class="message-row message-row-own chat-message-appear">
         <div class="message-bubble-wrap">
-          <div class="message-bubble message-bubble-own js-message-own"
-               data-delete-url="/chat/group/message/${data.message_id}/delete/">
+          <div class="message-bubble message-bubble-own js-message-with-delete">
+            ${createDeleteMarkup(deleteUrl, previewText)}
+
             <div class="message-text">${escapeHtml(data.body).replace(/\n/g, "<br>")}</div>
             <div class="message-time">${data.time_only || ""}</div>
           </div>
@@ -419,12 +981,25 @@
 
   function createOtherMessage(data) {
     const ownerMark = data.is_owner_author ? " • владелец" : "";
+    const previewText = escapeHtml(data.body || "Сообщение");
+    const deleteUrl = `/chat/group/message/${data.message_id}/delete/`;
+
+    const deleteMarkup = currentUserIsGroupOwner
+      ? createDeleteMarkup(deleteUrl, previewText)
+      : "";
+
+    const deleteClass = currentUserIsGroupOwner
+      ? "js-message-with-delete"
+      : "";
 
     return `
       <div class="message-row message-row-other chat-message-appear">
         <div class="message-bubble-wrap">
           <div class="message-meta">${escapeHtml(data.author)}${ownerMark}</div>
-          <div class="message-bubble message-bubble-other">
+
+          <div class="message-bubble message-bubble-other ${deleteClass}">
+            ${deleteMarkup}
+
             <div class="message-text">${escapeHtml(data.body).replace(/\n/g, "<br>")}</div>
             <div class="message-time">${data.time_only || ""}</div>
           </div>
@@ -443,16 +1018,23 @@
       chatBox.insertAdjacentHTML("beforeend", createOtherMessage(data));
     }
 
-    bindOwnMessageMenus();
+    bindDeleteMessageMenus();
 
     if (shouldStickToBottom) {
       scrollToBottom(true);
     }
   }
 
+  function setConnectedState(isConnected) {
+    sendButton.disabled = false;
+    sendButton.innerText = "Отправить";
+  }
+
   function showTyping(authorName) {
     typingIndicator.textContent = `${authorName} печатает...`;
+
     clearTimeout(typingVisibleTimer);
+
     typingVisibleTimer = setTimeout(() => {
       typingIndicator.textContent = "";
     }, 1400);
@@ -463,7 +1045,7 @@
 
     chatSocket.send(JSON.stringify({
       type: "typing",
-      is_typing: isTyping
+      is_typing: isTyping,
     }));
   }
 
@@ -474,6 +1056,7 @@
     }
 
     clearTimeout(typingTimer);
+
     typingTimer = setTimeout(() => {
       iAmTyping = false;
       sendTyping(false);
@@ -481,11 +1064,13 @@
   }
 
   function connectSocket() {
+    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) return;
+
     chatSocket = new WebSocket(socketUrl);
 
     chatSocket.onopen = function() {
-      sendButton.disabled = false;
-      sendButton.innerText = "Отправить";
+      clearTimeout(reconnectTimer);
+      setConnectedState(true);
     };
 
     chatSocket.onmessage = function(e) {
@@ -495,6 +1080,7 @@
         if (!data.is_own && data.is_typing) {
           showTyping(data.author);
         }
+
         return;
       }
 
@@ -505,21 +1091,27 @@
       console.error("GROUP WS ERROR:", e);
     };
 
-    chatSocket.onclose = function(e) {
-      console.warn("GROUP WS CLOSED:", e.code, e.reason);
-      sendButton.disabled = true;
-      sendButton.innerText = "Нет соединения";
+    chatSocket.onclose = function() {
+      setConnectedState(false);
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connectSocket, 2000);
     };
   }
 
   chatForm.addEventListener("submit", function(e) {
+    const message = chatInput.value.trim();
+
+    if (hasSelectedImages()) {
+      return;
+    }
+
     e.preventDefault();
 
-    const message = chatInput.value.trim();
     if (!message) return;
 
     if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-      alert("Соединение с групповым чатом потеряно. Обновите страницу.");
+      connectSocket();
+      alert("Соединение восстанавливается. Повторите отправку через пару секунд.");
       return;
     }
 
@@ -530,6 +1122,12 @@
     sendTyping(false);
     chatInput.focus();
   });
+
+  if (chatImagesInput) {
+    chatImagesInput.addEventListener("change", function() {
+      updateSelectedFilesText();
+    });
+  }
 
   chatInput.addEventListener("input", handleInputTyping);
 
@@ -556,17 +1154,122 @@
     });
   }
 
+  if (deleteCancel) {
+    deleteCancel.addEventListener("click", closeDeleteModal);
+  }
+
+  if (deleteModal) {
+    deleteModal.addEventListener("click", function(e) {
+      if (e.target === deleteModal) {
+        closeDeleteModal();
+      }
+    });
+  }
+
   document.addEventListener("click", function(e) {
-    if (!contextMenu.contains(e.target)) {
-      hideContextMenu();
+    if (!e.target.closest(".message-bubble")) {
+      closeAllDeletePopovers();
     }
   });
 
-  document.addEventListener("scroll", hideContextMenu, true);
-  window.addEventListener("resize", hideContextMenu);
+  document.addEventListener("scroll", closeAllDeletePopovers, true);
+  window.addEventListener("resize", closeAllDeletePopovers);
 
+  const groupPhotoButtons = Array.from(document.querySelectorAll(".group-photo-open"));
+  const groupLightbox = document.getElementById("group-lightbox");
+  const groupLightboxImage = document.getElementById("group-lightbox-image");
+  const groupLightboxClose = document.getElementById("group-lightbox-close");
+  const groupLightboxPrev = document.getElementById("group-lightbox-prev");
+  const groupLightboxNext = document.getElementById("group-lightbox-next");
+
+  let currentGroupPhotoIndex = 0;
+
+  function openGroupPhoto(index) {
+    if (!groupPhotoButtons.length) return;
+
+    currentGroupPhotoIndex = index;
+    groupLightboxImage.src = groupPhotoButtons[currentGroupPhotoIndex].dataset.src;
+    groupLightbox.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeGroupPhoto() {
+    groupLightbox.classList.remove("is-open");
+    groupLightboxImage.src = "";
+    document.body.style.overflow = "";
+  }
+
+  function showPrevGroupPhoto() {
+    currentGroupPhotoIndex--;
+
+    if (currentGroupPhotoIndex < 0) {
+      currentGroupPhotoIndex = groupPhotoButtons.length - 1;
+    }
+
+    openGroupPhoto(currentGroupPhotoIndex);
+  }
+
+  function showNextGroupPhoto() {
+    currentGroupPhotoIndex++;
+
+    if (currentGroupPhotoIndex >= groupPhotoButtons.length) {
+      currentGroupPhotoIndex = 0;
+    }
+
+    openGroupPhoto(currentGroupPhotoIndex);
+  }
+
+  groupPhotoButtons.forEach((button, index) => {
+    button.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openGroupPhoto(index);
+    });
+  });
+
+  groupLightboxClose.addEventListener("click", closeGroupPhoto);
+  groupLightboxPrev.addEventListener("click", showPrevGroupPhoto);
+  groupLightboxNext.addEventListener("click", showNextGroupPhoto);
+
+  groupLightbox.addEventListener("click", function(e) {
+    if (e.target === groupLightbox) {
+      closeGroupPhoto();
+    }
+  });
+
+  document.addEventListener("keydown", function(e) {
+    if (groupLightbox.classList.contains("is-open")) {
+      if (e.key === "Escape") {
+        closeGroupPhoto();
+      }
+
+      if (e.key === "ArrowLeft") {
+        showPrevGroupPhoto();
+      }
+
+      if (e.key === "ArrowRight") {
+        showNextGroupPhoto();
+      }
+
+      return;
+    }
+
+    if (deleteModal && deleteModal.classList.contains("is-open")) {
+      if (e.key === "Escape") {
+        closeDeleteModal();
+      }
+
+      return;
+    }
+
+    if (e.key === "Escape") {
+      closeAllDeletePopovers();
+    }
+  });
+
+  setConnectedState(false);
   connectSocket();
-  bindOwnMessageMenus();
+  bindDeleteMessageMenus();
   scrollToBottom(true);
 </script>
+
 {% endblock %}

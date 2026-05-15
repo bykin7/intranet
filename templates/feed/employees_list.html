@@ -1,5 +1,5 @@
 {% extends "core/base.html" %}
-{% block title %}HappyTogether — Сотрудники{% endblock %}
+{% block title %}Альфа-М Portal — Сотрудники{% endblock %}
 
 {% block content %}
 <div class="page-header-unified">
@@ -10,8 +10,10 @@
 
   <div class="page-header-actions">
     {% if user.is_authenticated and user.profile.position == "sysadmin" %}
-  <a class="btn btn-success pill" href="{% url 'employee_create' %}">➕ Новый сотрудник</a>
-{% endif %}
+      <a class="btn btn-success pill" href="{% url 'employee_create' %}">
+        ➕ Новый сотрудник
+      </a>
+    {% endif %}
   </div>
 </div>
 
@@ -20,24 +22,36 @@
   <div class="card-soft mb-4">
     <div class="card-body">
       <form method="get" class="row g-3">
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-5">
           <label class="form-label">Поиск</label>
           <input
             type="text"
             name="q"
             value="{{ search_query }}"
             class="form-control"
-            placeholder="Поиск по ФИО или логину"
+            placeholder="Поиск по ФИО"
           >
         </div>
 
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <label class="form-label">Должность</label>
           <select name="position" class="form-select">
             <option value="">Все должности</option>
             {% for value, label in positions %}
               <option value="{{ value }}" {% if position_filter == value %}selected{% endif %}>
                 {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2">
+          <label class="form-label">Магазин</label>
+          <select name="store" class="form-select">
+            <option value="">Все магазины</option>
+            {% for store in stores %}
+              <option value="{{ store.id }}" {% if store_filter == store.id|stringformat:"s" %}selected{% endif %}>
+                {{ store.name }}
               </option>
             {% endfor %}
           </select>
@@ -70,27 +84,23 @@
                         {{ profile.full_name|default:profile.user.username }}
                       </div>
 
-                      <div class="small muted">
-                        @{{ profile.user.username }}
-                      </div>
-
                       <div class="mt-2 d-flex flex-wrap gap-2">
                         {% if profile.position == "supervisor" %}
                           <span class="badge text-bg-primary pill">Супервайзер</span>
                         {% elif profile.position == "security" %}
-                           <span class="badge text-bg-danger pill">Служба безопасности</span>
+                          <span class="badge text-bg-danger pill">Служба безопасности</span>
                         {% elif profile.position == "admin" %}
-                            span class="badge text-bg-warning pill text-dark">Администратор</span>
-                       {% elif profile.position == "sysadmin" %}
+                          <span class="badge text-bg-warning pill text-dark">Администратор</span>
+                        {% elif profile.position == "sysadmin" %}
                           <span class="badge text-bg-dark pill">Системный администратор</span>
                         {% elif profile.position == "cashier" %}
                           <span class="badge text-bg-success pill">Кассир</span>
                         {% elif profile.position == "loss_prevention" %}
-                           <span class="badge text-bg-info pill text-dark">Специалист ОПП</span>
+                          <span class="badge text-bg-info pill text-dark">Специалист ОПП</span>
                         {% elif profile.position == "worker" %}
                           <span class="badge text-bg-secondary pill">Рабочий</span>
                         {% else %}
-                         <span class="badge text-bg-light pill text-dark">Без должности</span>
+                          <span class="badge text-bg-light pill text-dark">Без должности</span>
                         {% endif %}
                       </div>
                     </div>
@@ -105,15 +115,23 @@
                 </div>
 
                 <div class="mt-3 small">
-                  <div class="mb-2">
-                    <span class="muted">Отдел:</span>
-                    <span>{{ profile.department|default:"—" }}</span>
-                  </div>
+                  {% if profile.position != "supervisor" and profile.position != "security" %}
+                    <div class="mb-2">
+                      <span class="muted">Магазин:</span>
+                      {% if profile.store %}
+                        <span>{{ profile.store.name }}</span>
+                      {% else %}
+                        <span>—</span>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+
                   <div>
                     <span class="muted">Телефон:</span>
                     <span>{{ profile.phone|default:"—" }}</span>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>

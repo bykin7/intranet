@@ -21,7 +21,7 @@
 
     <div class="border rounded p-3 mb-4 bg-light">
       <div class="small muted mb-1">
-        <strong>{{ message.author.username }}</strong> • {{ message.created_at|date:"H:i" }}
+       <strong>{{ message.author.profile.full_name|default:"Без ФИО" }}</strong> • {{ message.created_at|date:"H:i" }}
       </div>
       <div>{{ message.body|linebreaks }}</div>
     </div>

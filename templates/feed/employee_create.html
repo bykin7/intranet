@@ -74,6 +74,36 @@
         {% endif %}
       </div>
 
+      <div class="mb-3">
+        <label class="form-label">Основной магазин</label>
+        {{ form.store }}
+        {% if form.store.errors %}
+          <div class="text-danger small mt-1">
+            {{ form.store.errors|striptags }}
+          </div>
+        {% endif %}
+        <div class="form-text">
+          Для администратора, кассира, ОПП и рабочего выбирается один магазин.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Доступные магазины</label>
+        <div class="border rounded-4 p-3">
+          {{ form.managed_stores }}
+        </div>
+
+        {% if form.managed_stores.errors %}
+          <div class="text-danger small mt-1">
+            {{ form.managed_stores.errors|striptags }}
+          </div>
+        {% endif %}
+
+        <div class="form-text">
+          Для супервайзера и службы безопасности можно выбрать несколько магазинов.
+        </div>
+      </div>
+
       <div class="d-flex gap-2">
         <button class="btn btn-success pill" type="submit">Создать сотрудника</button>
         <a class="btn btn-outline-secondary pill" href="{% url 'employees' %}">Отмена</a>

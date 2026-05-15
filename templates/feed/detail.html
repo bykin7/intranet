@@ -1,80 +1,905 @@
 {% extends "core/base.html" %}
-{% block title %}HappyTogether — {{ post.title }}{% endblock %}
+{% block title %}Альфа-М Portal — {{ post.title }}{% endblock %}
 
 {% block content %}
-<div class="page-header-unified">
-  <div class="page-header-main">
-    <h1 class="page-title">{{ post.title }}</h1>
-    <div class="page-subtitle">
-      Автор: {{ post.author.profile.full_name|default:post.author.username }} • {{ post.created_at|date:"d.m.Y H:i" }}
-    </div>
-  </div>
 
-  <div class="page-header-actions">
-    <a href="{% url 'feed_list' %}" class="btn btn-light pill btn-sm">
-      ← Назад
-    </a>
+  <div class="news-detail-page">
 
-    {% if user.is_authenticated and user.profile.position == "supervisor" %}
-      <a class="btn btn-outline-primary pill btn-sm" href="{% url 'post_edit' post.id %}">
-        Редактировать
-      </a>
+    <div class="page-header-unified news-old-header">
+    <div class="page-header-main">
+      <h1 class="page-title news-old-title">
+        {{ post.title }}
+      </h1>
 
-      <a class="btn btn-outline-danger pill btn-sm" href="{% url 'post_delete' post.id %}">
-        Удалить
-      </a>
-    {% endif %}
-  </div>
-</div>
-
-<div class="card card-soft mb-3">
-  <div class="card-body">
-    <div>{{ post.body|linebreaks }}</div>
-  </div>
-</div>
-
-<div class="card card-soft mb-3">
-  <div class="card-body">
-    <h2 class="h5 mb-3">Комментарии</h2>
-
-    {% for c in post.comments.all %}
-      <div class="mb-3 border-bottom pb-3">
-        <div class="d-flex justify-content-between align-items-start gap-2">
-          <div class="small muted">
-            <strong>{{ c.author.username }}</strong> • {{ c.created_at|date:"d.m.Y H:i" }}
-          </div>
-
-          {% if user.is_authenticated %}
-            {% if user.profile.position == "supervisor" or c.author == user %}
-              <a class="btn btn-sm btn-outline-danger pill"
-                 href="{% url 'comment_delete' c.id %}">
-                Удалить
-              </a>
-            {% endif %}
-          {% endif %}
-        </div>
-
-        <div class="mt-2">{{ c.body|linebreaks }}</div>
+      <div class="page-subtitle news-old-subtitle">
+        Автор: {{ post.author.profile.full_name|default:"Без ФИО" }}
+        • {{ post.created_at|date:"d.m.Y H:i" }}
       </div>
-    {% empty %}
-      <div class="muted">Комментариев пока нет.</div>
-    {% endfor %}
-  </div>
-</div>
 
-{% if user.is_authenticated %}
-  <div class="card card-soft">
-    <div class="card-body">
-      <h2 class="h5 mb-3">Добавить комментарий</h2>
+      <div class="news-old-meta">
+        {% if post.is_pinned %}
+          <span class="news-old-pinned">Закреплено</span>
+        {% endif %}
 
-      <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-          <textarea name="body" class="form-control" rows="4" placeholder="Напишите комментарий..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-success pill">Отправить</button>
-      </form>
+        <span>
+          Магазины:
+          {% if post.stores.all %}
+            {% for store in post.stores.all %}
+              {{ store.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          {% else %}
+            —
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="page-header-actions">
+      {% if user == post.author or user.profile.position == "sysadmin" %}
+        <a href="{% url 'post_edit' post.id %}" class="btn btn-outline-primary pill">
+          Изменить
+        </a>
+
+        <a href="{% url 'post_delete' post.id %}" class="btn btn-outline-danger pill">
+          Удалить
+        </a>
+      {% endif %}
+
+      <a href="{% url 'feed_list' %}" class="btn btn-light pill">
+        ← Назад к ленте
+      </a>
     </div>
   </div>
-{% endif %}
+
+  <div class="news-detail-card">
+
+    {% if post.images.all or post.image %}
+      <div class="news-detail-gallery-title">
+        Фотографии
+      </div>
+
+      <div class="news-detail-gallery">
+
+        {% for img in post.images.all %}
+          <button
+            type="button"
+            class="news-photo-card news-photo-open"
+            data-src="{{ img.image.url }}"
+          >
+            <img
+              src="{{ img.image.url }}"
+              class="news-detail-photo"
+              alt="Фото новости"
+            >
+          </button>
+        {% endfor %}
+
+        {% if post.image %}
+          <button
+            type="button"
+            class="news-photo-card news-photo-open"
+            data-src="{{ post.image.url }}"
+          >
+            <img
+              src="{{ post.image.url }}"
+              class="news-detail-photo"
+              alt="Фото новости"
+            >
+          </button>
+        {% endif %}
+
+      </div>
+    {% endif %}
+
+    <div class="news-detail-text">
+      {{ post.body|linebreaks }}
+    </div>
+
+  </div>
+
+  <div class="news-comments-card">
+    <div class="news-comments-head">
+      <div>
+        <h2 class="news-comments-title">Комментарии</h2>
+        <div class="news-comments-subtitle">
+          Обсуждение новости сотрудниками
+        </div>
+      </div>
+
+      <div class="news-comments-count">
+        {{ post.comments.all|length }}
+      </div>
+    </div>
+
+    {% if post.comments.all %}
+      <div class="news-comments-list">
+        {% for c in post.comments.all %}
+          <div class="news-comment-item">
+            <div class="news-comment-avatar">
+              {{ c.author.profile.full_name|default:"?"|slice:":1"|upper }}
+            </div>
+
+            <div class="news-comment-content">
+              <div class="news-comment-top">
+                <div>
+                  <div class="news-comment-author">
+                    {{ c.author.profile.full_name|default:"Без ФИО" }}
+                  </div>
+
+                  <div class="news-comment-date">
+                    {{ c.created_at|date:"d.m.Y H:i" }}
+                  </div>
+                </div>
+
+                {% if user == c.author or user.profile.position == "sysadmin" %}
+                  <a href="{% url 'comment_delete' c.id %}" class="news-comment-delete">
+                    Удалить
+                  </a>
+                {% endif %}
+              </div>
+
+              <div class="news-comment-text">
+                {{ c.body|linebreaks }}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="news-comments-empty">
+        <div class="news-comments-empty-icon">💬</div>
+        <div class="news-comments-empty-content">
+          <div class="news-comments-empty-title">Комментариев пока нет</div>
+          <div class="news-comments-empty-text">
+            Станьте первым, кто оставит комментарий к этой новости.
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post" class="news-comment-form">
+      {% csrf_token %}
+
+      <div class="news-comment-form-head">
+        <div class="news-comment-form-title">
+          Добавить комментарий
+        </div>
+
+        <div class="news-comment-form-subtitle">
+          Напишите сообщение по теме новости
+        </div>
+      </div>
+
+      <textarea
+        name="body"
+        rows="4"
+        class="news-comment-textarea"
+        placeholder="Введите комментарий..."
+        required
+      ></textarea>
+
+      <div class="news-comment-form-actions">
+        <button type="submit" class="btn btn-success pill news-comment-submit">
+          Отправить
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<div class="news-lightbox" id="news-lightbox">
+  <button type="button" class="news-lightbox-close" id="news-lightbox-close">
+    ×
+  </button>
+
+  <button type="button" class="news-lightbox-nav news-lightbox-prev" id="news-lightbox-prev">
+    ‹
+  </button>
+
+  <div class="news-lightbox-content">
+    <img src="" alt="Фото новости" id="news-lightbox-image">
+  </div>
+
+  <button type="button" class="news-lightbox-nav news-lightbox-next" id="news-lightbox-next">
+    ›
+  </button>
+</div>
+
+<style>
+  .news-detail-page {
+    padding-bottom: 30px;
+  }
+
+  .news-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 26px;
+  }
+
+  .news-detail-header-main {
+    max-width: 900px;
+  }
+
+  .news-detail-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .news-detail-date {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.86rem;
+    line-height: 1;
+    padding: 8px 14px;
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+  }
+
+  .news-detail-pinned {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #facc15;
+    color: #111827;
+    font-weight: 800;
+    font-size: 0.82rem;
+    line-height: 1;
+    padding: 8px 13px;
+    border-radius: 999px;
+  }
+
+  .news-detail-title {
+    margin: 0;
+    font-size: 2.25rem;
+    line-height: 1.12;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    color: #0f172a;
+  }
+
+  .news-detail-info {
+    margin-top: 14px;
+    color: #64748b;
+    font-size: 0.96rem;
+  }
+
+  .news-detail-stores {
+    margin-top: 8px;
+    color: #475569;
+    font-size: 0.92rem;
+  }
+
+  .news-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .news-detail-card {
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 26px;
+    padding: 28px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    margin-bottom: 26px;
+  }
+
+  .news-detail-gallery-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 16px;
+  }
+
+  .news-detail-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+
+  .news-photo-card {
+    width: 100%;
+    height: 240px;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 20px;
+    padding: 10px;
+    cursor: zoom-in;
+    transition: 0.18s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .news-photo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+  }
+
+  .news-detail-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 14px;
+    background: #ffffff;
+  }
+
+  .news-detail-text {
+    color: #111827;
+    font-size: 1.05rem;
+    line-height: 1.75;
+  }
+
+  .news-detail-text p:last-child {
+    margin-bottom: 0;
+  }
+
+  .news-comments-card {
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 26px;
+    padding: 22px 28px 24px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07);
+    margin-top: 24px;
+  }
+
+  .news-comments-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+    margin-bottom: 22px;
+  }
+
+  .news-comments-title {
+    margin: 0;
+    font-size: 1.45rem;
+    line-height: 1.2;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.03em;
+  }
+
+  .news-comments-subtitle {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.94rem;
+  }
+
+  .news-comments-count {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1rem;
+  }
+
+  .news-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .news-comment-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .news-comment-avatar {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1rem;
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+  }
+
+  .news-comment-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .news-comment-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+
+  .news-comment-author {
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .news-comment-date {
+    color: #64748b;
+    font-size: 0.82rem;
+    margin-top: 3px;
+  }
+
+  .news-comment-delete {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid rgba(220, 38, 38, 0.16);
+    border-radius: 999px;
+    padding: 6px 11px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .news-comment-delete:hover {
+    color: #991b1b;
+    background: #fee2e2;
+  }
+
+  .news-comment-text {
+    color: #1f2937;
+    line-height: 1.6;
+    font-size: 0.96rem;
+  }
+
+  .news-comment-text p:last-child {
+    margin-bottom: 0;
+  }
+
+  .news-comments-empty {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+    border: 1px dashed rgba(148, 163, 184, 0.42);
+    border-radius: 20px;
+    height: 90px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+
+  .news-comments-empty-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    border-radius: 999px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  }
+
+  .news-comments-empty-content {
+    display: none;
+  }
+
+  .news-comment-form {
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .news-comment-form-head {
+    margin-bottom: 12px;
+  }
+
+  .news-comment-form-title {
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .news-comment-form-subtitle {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 0.86rem;
+  }
+
+  .news-comment-textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 18px;
+    padding: 14px 16px;
+    background: #ffffff;
+    color: #0f172a;
+    outline: none;
+    transition: 0.16s ease;
+  }
+
+  .news-comment-textarea:focus {
+    border-color: rgba(37, 99, 235, 0.65);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.09);
+  }
+
+  .news-comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+  .news-comment-submit {
+    padding-left: 20px;
+    padding-right: 20px;
+    font-weight: 800;
+  }
+
+  .news-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+  }
+
+  .news-lightbox.is-open {
+    display: flex;
+  }
+
+  .news-lightbox-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .news-lightbox-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .news-lightbox-close {
+    position: fixed;
+    top: 22px;
+    right: 28px;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .news-lightbox-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 54px;
+    height: 54px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+    font-size: 2.4rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .news-lightbox-prev {
+    left: 28px;
+  }
+
+  .news-lightbox-next {
+    right: 28px;
+  }
+
+  @media (max-width: 768px) {
+    .news-detail-header {
+      flex-direction: column;
+    }
+
+    .news-detail-actions {
+      justify-content: flex-start;
+    }
+
+    .news-detail-title {
+      font-size: 1.55rem;
+    }
+
+    .news-detail-card {
+      padding: 18px;
+      border-radius: 20px;
+    }
+
+    .news-detail-gallery {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .news-photo-card {
+      height: 190px;
+      padding: 7px;
+      border-radius: 16px;
+    }
+
+    .news-detail-photo {
+      border-radius: 12px;
+    }
+
+    .news-comments-card {
+      padding: 18px;
+      border-radius: 22px;
+    }
+
+    .news-comments-head {
+      padding-bottom: 16px;
+      margin-bottom: 18px;
+    }
+
+    .news-comments-count {
+      width: 42px;
+      height: 42px;
+      flex-basis: 42px;
+    }
+
+    .news-comments-empty {
+      height: 82px;
+      margin-bottom: 18px;
+    }
+
+    .news-comment-item {
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .news-comment-avatar {
+      width: 36px;
+      height: 36px;
+      flex-basis: 36px;
+      font-size: 0.92rem;
+    }
+
+    .news-comment-top {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .news-comment-delete {
+      align-self: flex-start;
+    }
+
+    .news-comment-form-actions {
+      justify-content: stretch;
+    }
+
+    .news-comment-submit {
+      width: 100%;
+    }
+
+    .news-lightbox {
+      padding: 16px;
+    }
+
+    .news-lightbox-close {
+      top: 12px;
+      right: 12px;
+      width: 42px;
+      height: 42px;
+      font-size: 1.7rem;
+    }
+
+    .news-lightbox-nav {
+      width: 42px;
+      height: 42px;
+      font-size: 2rem;
+    }
+
+    .news-lightbox-prev {
+      left: 10px;
+    }
+
+    .news-lightbox-next {
+      right: 10px;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .news-detail-gallery {
+      grid-template-columns: 1fr;
+    }
+
+    .news-photo-card {
+      height: 230px;
+    }
+  }
+
+  .news-old-header {
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 26px;
+    padding: 26px 28px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.07);
+    margin-bottom: 26px;
+  }
+
+  .news-old-title {
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.04em;
+    text-transform: none;
+  }
+
+  .news-old-subtitle {
+    margin-top: 10px;
+    color: #64748b;
+    font-size: 1rem;
+  }
+
+  .news-old-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    color: #475569;
+    font-size: 0.94rem;
+  }
+
+  .news-old-pinned {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #facc15;
+    color: #111827;
+    font-weight: 800;
+    font-size: 0.78rem;
+    line-height: 1;
+    padding: 7px 12px;
+    border-radius: 999px;
+  }
+
+  @media (max-width: 768px) {
+    .news-old-header {
+      padding: 20px;
+      border-radius: 22px;
+    }
+
+    .news-old-title {
+      font-size: 1.55rem;
+    }
+
+    .news-old-meta {
+      font-size: 0.88rem;
+    }
+  }
+
+</style>
+
+<script>
+  const photoButtons = Array.from(document.querySelectorAll(".news-photo-open"));
+  const lightbox = document.getElementById("news-lightbox");
+  const lightboxImage = document.getElementById("news-lightbox-image");
+  const closeBtn = document.getElementById("news-lightbox-close");
+  const prevBtn = document.getElementById("news-lightbox-prev");
+  const nextBtn = document.getElementById("news-lightbox-next");
+
+  let currentPhotoIndex = 0;
+
+  function openPhoto(index) {
+    if (!photoButtons.length) return;
+
+    currentPhotoIndex = index;
+    const src = photoButtons[currentPhotoIndex].dataset.src;
+
+    lightboxImage.src = src;
+    lightbox.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closePhoto() {
+    lightbox.classList.remove("is-open");
+    lightboxImage.src = "";
+    document.body.style.overflow = "";
+  }
+
+  function showPrevPhoto() {
+    currentPhotoIndex = currentPhotoIndex - 1;
+
+    if (currentPhotoIndex < 0) {
+      currentPhotoIndex = photoButtons.length - 1;
+    }
+
+    openPhoto(currentPhotoIndex);
+  }
+
+  function showNextPhoto() {
+    currentPhotoIndex = currentPhotoIndex + 1;
+
+    if (currentPhotoIndex >= photoButtons.length) {
+      currentPhotoIndex = 0;
+    }
+
+    openPhoto(currentPhotoIndex);
+  }
+
+  photoButtons.forEach((button, index) => {
+    button.addEventListener("click", () => {
+      openPhoto(index);
+    });
+  });
+
+  closeBtn.addEventListener("click", closePhoto);
+  prevBtn.addEventListener("click", showPrevPhoto);
+  nextBtn.addEventListener("click", showNextPhoto);
+
+  lightbox.addEventListener("click", function(e) {
+    if (e.target === lightbox) {
+      closePhoto();
+    }
+  });
+
+  document.addEventListener("keydown", function(e) {
+    if (!lightbox.classList.contains("is-open")) return;
+
+    if (e.key === "Escape") {
+      closePhoto();
+    }
+
+    if (e.key === "ArrowLeft") {
+      showPrevPhoto();
+    }
+
+    if (e.key === "ArrowRight") {
+      showNextPhoto();
+    }
+  });
+</script>
+
 {% endblock %}

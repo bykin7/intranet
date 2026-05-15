@@ -41,19 +41,15 @@
                   <div class="d-flex justify-content-between align-items-start gap-3">
                     <div class="d-flex gap-3 align-items-start flex-grow-1">
                       <div class="user-avatar" style="width:42px;height:42px;font-size:1rem;">
-                        {{ item.other_user.username|slice:":1"|upper }}
+                        {{ item.other_user.profile.full_name|default:"?"|slice:":1"|upper }}
                       </div>
 
                       <div class="flex-grow-1" style="min-width: 0;">
                         <div class="fw-semibold d-flex align-items-center flex-wrap gap-2">
-                          {{ item.other_user.profile.full_name|default:item.other_user.username }}
+                          {{ item.other_user.profile.full_name|default:"Без ФИО" }}
                           {% if item.unread_count > 0 %}
                             <span class="badge text-bg-danger pill">{{ item.unread_count }}</span>
                           {% endif %}
-                        </div>
-
-                        <div class="small muted">
-                          @{{ item.other_user.username }}
                         </div>
 
                         {% if item.last_message %}
@@ -117,8 +113,7 @@
                         </div>
 
                         <div class="small muted">
-                          Владелец: {{ item.group.owner.profile.full_name|default:item.group.owner.username }}
-                        </div>
+                          Владелец: {{ item.group.owner.profile.full_name|default:"Без ФИО" }}
 
                         {% if item.last_message %}
                           <div class="mt-2 small text-truncate" style="max-width: 100%;">

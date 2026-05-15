@@ -1,0 +1,168 @@
+{% extends "core/base.html" %}
+{% block title %}Альфа-М Portal — {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <h1 class="page-title">{{ store.name }}</h1>
+    <div class="page-subtitle">
+      {{ store.address|default:"Адрес не указан" }}
+    </div>
+  </div>
+
+  <div class="page-header-actions">
+    <a class="btn btn-success pill" href="{% url 'store_assign_employees' store.id %}">
+      👥 Распределить сотрудников
+    </a>
+
+    <a class="btn btn-outline-primary pill" href="{% url 'store_edit' store.id %}">
+      Изменить
+    </a>
+
+    <a class="btn btn-light pill" href="{% url 'stores_list' %}">
+      ← Назад
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Левая карточка: основная информация о магазине -->
+  <div class="col-12 col-xl-4">
+    <div class="card-soft h-100">
+      <div class="card-body">
+        <h5 class="mb-3">{{ store.name }}</h5>
+
+        <div class="mb-2">
+          <span class="muted">Адрес:</span>
+          <span>{{ store.address|default:"—" }}</span>
+        </div>
+
+        <div class="mb-2">
+          <span class="muted">Рабочий телефон:</span>
+          <span>{{ store.phone|default:"—" }}</span>
+        </div>
+
+        <div class="mb-2">
+          <span class="muted">Статус:</span>
+          {% if store.is_active %}
+            <span class="badge text-bg-success pill">Активен</span>
+          {% else %}
+            <span class="badge text-bg-secondary pill">Отключён</span>
+          {% endif %}
+        </div>
+
+        <hr>
+
+        <div class="mb-2">
+          <span class="muted">Рабочий аккаунт:</span>
+        </div>
+
+        {% if store.worker_user %}
+          <div class="fw-semibold">
+            Рабочий {{ store.name }}
+          </div>
+        {% else %}
+          <div class="muted">Рабочий аккаунт не создан</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Правая часть: сотрудники и доступ -->
+  <div class="col-12 col-xl-8">
+    <div class="row g-4">
+
+      <!-- Сотрудники магазина -->
+      <div class="col-12">
+        <div class="card-soft">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h5 class="mb-1">Сотрудники магазина</h5>
+                <div class="muted small">
+                  Администратор, кассир, специалист ОПП и рабочие сотрудники магазина
+                </div>
+              </div>
+            </div>
+
+            {% if employees %}
+              <div class="row g-3">
+                {% for profile in employees %}
+                  <div class="col-12 col-md-6">
+                    <div class="border rounded-4 p-3 h-100">
+                      <div class="fw-semibold">
+                        {{ profile.full_name|default:profile.user.username }}
+                      </div>
+
+                      <div class="mb-2">
+                        <span class="badge text-bg-light text-dark pill">
+                          {{ profile.get_position_display|default:"Без должности" }}
+                        </span>
+                      </div>
+
+                      {% if profile.phone %}
+                        <div class="small">
+                          <span class="muted">Телефон:</span>
+                          <span>{{ profile.phone }}</span>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="muted">
+                Сотрудники пока не привязаны к этому магазину.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Супервайзеры и СБ -->
+      <div class="col-12">
+        <div class="card-soft">
+          <div class="card-body">
+            <h5 class="mb-1">Супервайзеры и СБ с доступом к магазину</h5>
+            <div class="muted small mb-3">
+              Сотрудники, которые могут работать сразу с несколькими магазинами
+            </div>
+
+            {% if managers %}
+              <div class="row g-3">
+                {% for profile in managers %}
+                  <div class="col-12 col-md-6">
+                    <div class="border rounded-4 p-3 h-100">
+                      <div class="fw-semibold">
+                        {{ profile.full_name|default:profile.user.username }}
+                      </div>
+
+                      <div class="mb-2">
+                        <span class="badge text-bg-primary pill">
+                          {{ profile.get_position_display }}
+                        </span>
+                      </div>
+
+                      {% if profile.phone %}
+                        <div class="small">
+                          <span class="muted">Телефон:</span>
+                          <span>{{ profile.phone }}</span>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="muted">
+                Супервайзеры и СБ пока не назначены.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

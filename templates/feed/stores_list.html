@@ -1,0 +1,86 @@
+{% extends "core/base.html" %}
+{% block title %}Альфа-М Portal — Магазины{% endblock %}
+
+{% block content %}
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <h1 class="page-title">Магазины</h1>
+    <div class="page-subtitle">
+      Торговые точки сети и рабочие аккаунты магазинов
+    </div>
+  </div>
+
+  <div class="page-header-actions">
+    <a class="btn btn-success pill" href="{% url 'store_create' %}">
+      ➕ Новый магазин
+    </a>
+  </div>
+</div>
+
+<div class="card-soft">
+  <div class="card-body">
+    {% if stores %}
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Магазин</th>
+              <th>Адрес</th>
+              <th>Телефон</th>
+              <th>Рабочий аккаунт</th>
+              <th>Сотрудники</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for store in stores %}
+              <tr>
+                <td class="fw-semibold">{{ store.name }}</td>
+                <td>{{ store.address|default:"—" }}</td>
+                <td>{{ store.phone|default:"—" }}</td>
+
+                <td>
+                 {% if store.worker_user and store.worker_user.profile %}
+                  {{ store.worker_user.profile.full_name }}
+                  <div class="small muted">@{{ store.worker_user.username }}</div>
+                {% elif store.worker_user %}
+                  @{{ store.worker_user.username }}
+                {% else %}
+                  —
+                {% endif %}
+                </td>
+
+                <td>{{ store.employee_count }}</td>
+
+                <td>
+                  {% if store.is_active %}
+                    <span class="badge text-bg-success pill">Активен</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary pill">Отключён</span>
+                  {% endif %}
+                </td>
+
+                <td class="text-end">
+                  <a class="btn btn-outline-primary btn-sm pill"
+                     href="{% url 'store_detail' store.id %}">
+                    Подробнее
+                  </a>
+
+                  <a class="btn btn-outline-secondary btn-sm pill"
+                     href="{% url 'store_edit' store.id %}">
+                    Изменить
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="muted">Магазины ещё не добавлены.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

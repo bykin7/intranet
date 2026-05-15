@@ -1,49 +1,78 @@
 {% extends "core/base.html" %}
-{% block title %}HappyTogether — Новый пост{% endblock %}
+{% block title %}Альфа-М Portal — Новая новость{% endblock %}
 
 {% block content %}
 <div class="page-header-unified">
   <div class="page-header-main">
-    <h1 class="page-title">Новый пост</h1>
-    <div class="page-subtitle">Опубликуйте объявление в ленту</div>
+    <h1 class="page-title">Новая новость</h1>
+    <div class="page-subtitle">
+      Публикация новости для магазинов, закреплённых за супервайзером
+    </div>
   </div>
 
   <div class="page-header-actions">
     <a href="{% url 'feed_list' %}" class="btn btn-light pill btn-sm">
-      ← Назад
+      ← Назад к ленте
     </a>
   </div>
 </div>
 
-<div class="card card-soft">
+<div class="card-soft">
   <div class="card-body">
-    <form method="post" novalidate>
+    <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
 
       <div class="mb-3">
         <label class="form-label">Заголовок</label>
         {{ form.title }}
         {% if form.title.errors %}
-          <div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>
+          <div class="text-danger small mt-1">
+            {{ form.title.errors|striptags }}
+          </div>
         {% endif %}
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Текст</label>
+        <label class="form-label">Текст новости</label>
         {{ form.body }}
         {% if form.body.errors %}
-          <div class="text-danger small mt-1">{{ form.body.errors|striptags }}</div>
+          <div class="text-danger small mt-1">
+            {{ form.body.errors|striptags }}
+          </div>
         {% endif %}
       </div>
 
-      <div class="form-check mb-3">
+      <div class="mb-3">
+        <label class="form-label">Фотографии</label>
+
+        <input
+          type="file"
+          name="images"
+          accept="image/*"
+          multiple
+          class="form-control"
+        >
+
+        <div class="form-text">
+          Можно выбрать сразу несколько фотографий.
+        </div>
+      </div>
+
+      <div class="form-check mb-4">
         {{ form.is_pinned }}
-        <label class="form-check-label">📌 Важное (закрепить сверху)</label>
+        <label class="form-check-label">
+          Закрепить новость
+        </label>
       </div>
 
       <div class="d-flex gap-2">
-        <button class="btn btn-success pill" type="submit">Опубликовать</button>
-        <a class="btn btn-outline-secondary pill" href="{% url 'feed_list' %}">Отмена</a>
+        <button type="submit" class="btn btn-success pill">
+          Опубликовать
+        </button>
+
+        <a href="{% url 'feed_list' %}" class="btn btn-outline-secondary pill">
+          Отмена
+        </a>
       </div>
     </form>
   </div>

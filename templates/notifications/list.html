@@ -1,0 +1,219 @@
+{% extends "core/base.html" %}
+{% block title %}Альфа-М Portal — Уведомления{% endblock %}
+
+{% block content %}
+
+<div class="page-header-unified">
+  <div class="page-header-main">
+    <h1 class="page-title">Уведомления</h1>
+    <div class="page-subtitle">
+      Здесь собраны новые сообщения, задачи и важные события
+    </div>
+  </div>
+
+  <div class="page-header-actions">
+    {% if unread_count > 0 %}
+      <form method="post" action="{% url 'notifications_mark_all_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-light pill btn-sm">
+          Отметить все как прочитанные
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="notifications-page">
+  {% if page_obj %}
+    <div class="notifications-list">
+      {% for notification in page_obj %}
+        <a href="{% url 'notification_open' notification.id %}"
+           class="notification-card {% if not notification.is_read %}notification-card-unread{% endif %}">
+
+          <div class="notification-icon">
+            {% if notification.notification_type == "private_message" %}
+              💬
+            {% elif notification.notification_type == "group_message" %}
+              👥
+            {% elif notification.notification_type == "task" %}
+              ✅
+            {% elif notification.notification_type == "post" %}
+              📰
+            {% elif notification.notification_type == "comment" %}
+              💭
+            {% elif notification.notification_type == "group" %}
+              👥
+            {% else %}
+              🔔
+            {% endif %}
+          </div>
+
+          <div class="notification-body">
+            <div class="notification-title-row">
+              <div class="notification-title">
+                {{ notification.title }}
+              </div>
+
+              {% if not notification.is_read %}
+                <span class="notification-badge">Новое</span>
+              {% endif %}
+            </div>
+
+            {% if notification.text %}
+              <div class="notification-text">
+                {{ notification.text }}
+              </div>
+            {% endif %}
+
+            <div class="notification-meta">
+              {% if notification.actor %}
+                От: {{ notification.actor.profile.full_name|default:notification.actor.username }} •
+              {% endif %}
+              {{ notification.created_at|date:"d.m.Y H:i" }}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <div class="notifications-pagination">
+        {% if page_obj.has_previous %}
+          <a class="btn btn-light pill btn-sm" href="?page={{ page_obj.previous_page_number }}">
+            ← Назад
+          </a>
+        {% endif %}
+
+        <span class="muted small">
+          Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+          <a class="btn btn-light pill btn-sm" href="?page={{ page_obj.next_page_number }}">
+            Вперёд →
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="card-soft">
+      <div class="card-body text-center py-5">
+        <div style="font-size: 2.4rem;">🔔</div>
+        <h2 class="h5 mt-3 mb-2">Уведомлений пока нет</h2>
+        <div class="muted">
+          Здесь будут отображаться новые сообщения, задачи и другие события.
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .notifications-page {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .notification-card {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 22px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    color: inherit;
+    text-decoration: none;
+    transition: 0.16s ease;
+  }
+
+  .notification-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.1);
+    border-color: rgba(59, 130, 246, 0.35);
+  }
+
+  .notification-card-unread {
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%);
+    border-color: rgba(59, 130, 246, 0.36);
+  }
+
+  .notification-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 16px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+  }
+
+  .notification-body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .notification-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .notification-title {
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .notification-badge {
+    border-radius: 999px;
+    padding: 4px 9px;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .notification-text {
+    margin-top: 5px;
+    color: #475569;
+    line-height: 1.45;
+  }
+
+  .notification-meta {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .notifications-pagination {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .notification-card {
+      border-radius: 18px;
+    }
+
+    .notification-title-row {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+</style>
+
+{% endblock %}

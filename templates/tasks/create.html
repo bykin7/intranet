@@ -5,7 +5,7 @@
 <div class="page-header-unified">
   <div class="page-header-main">
     <h1 class="page-title">Новая задача</h1>
-    <div class="page-subtitle">Назначьте исполнителя, срок и приоритет</div>
+    <div class="page-subtitle">Назначьте исполнителя, срок, приоритет и при необходимости прикрепите фотографии</div>
   </div>
 
   <div class="page-header-actions">
@@ -17,39 +17,159 @@
 
 <div class="card card-soft">
   <div class="card-body">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
 
       <div class="mb-3">
         <label class="form-label">Исполнитель</label>
         {{ form.assignee }}
+
+        {% if form.assignee.errors %}
+          <div class="text-danger small mt-1">
+            {{ form.assignee.errors|striptags }}
+          </div>
+        {% endif %}
       </div>
 
       <div class="mb-3">
         <label class="form-label">Название</label>
         {{ form.title }}
+
+        {% if form.title.errors %}
+          <div class="text-danger small mt-1">
+            {{ form.title.errors|striptags }}
+          </div>
+        {% endif %}
       </div>
 
       <div class="mb-3">
         <label class="form-label">Описание</label>
         {{ form.description }}
+
+        {% if form.description.errors %}
+          <div class="text-danger small mt-1">
+            {{ form.description.errors|striptags }}
+          </div>
+        {% endif %}
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Приоритет</label>
-        {{ form.priority }}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Приоритет</label>
+          {{ form.priority }}
+
+          {% if form.priority.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.priority.errors|striptags }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Срок</label>
+          {{ form.due_date }}
+
+          {% if form.due_date.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.due_date.errors|striptags }}
+            </div>
+          {% endif %}
+        </div>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Срок</label>
-        {{ form.due_date }}
+      <div class="task-photo-upload mt-4">
+        <div class="task-photo-upload-icon">📷</div>
+
+        <div class="task-photo-upload-body">
+          <label class="form-label mb-1">Фотографии к задаче</label>
+          {{ form.images }}
+
+          {% if form.images.help_text %}
+            <div class="form-text">
+              {{ form.images.help_text }}
+            </div>
+          {% endif %}
+
+          {% if form.images.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.images.errors|striptags }}
+            </div>
+          {% endif %}
+
+          <div id="task-selected-files" class="task-selected-files"></div>
+        </div>
       </div>
 
-      <div class="d-flex gap-2">
-        <button class="btn btn-success pill" type="submit">Создать</button>
-        <a class="btn btn-outline-secondary pill" href="{% url 'task_list' %}">Отмена</a>
+      <div class="d-flex gap-2 mt-4">
+        <button class="btn btn-success pill" type="submit">
+          Создать
+        </button>
+
+        <a class="btn btn-outline-secondary pill" href="{% url 'task_list' %}">
+          Отмена
+        </a>
       </div>
     </form>
   </div>
 </div>
+
+<style>
+  .task-photo-upload {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 20px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+  }
+
+  .task-photo-upload-icon {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: 16px;
+    background: #e0f2fe;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+  }
+
+  .task-photo-upload-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-selected-files {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .task-photo-upload {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<script>
+  const taskImagesInput = document.getElementById("id_images");
+  const taskSelectedFiles = document.getElementById("task-selected-files");
+
+  if (taskImagesInput && taskSelectedFiles) {
+    taskImagesInput.addEventListener("change", function() {
+      const count = taskImagesInput.files.length;
+
+      if (count > 0) {
+        taskSelectedFiles.textContent = `Выбрано фото: ${count}`;
+      } else {
+        taskSelectedFiles.textContent = "";
+      }
+    });
+  }
+</script>
 {% endblock %}

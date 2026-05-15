@@ -11,7 +11,7 @@
   <div class="page-header-main">
     <h1 class="page-title">{{ task.title }}</h1>
     <div class="page-subtitle">
-      Детали задачи, исполнитель и текущий статус
+      Детали задачи, исполнитель, статус и прикреплённые фотографии
     </div>
   </div>
 
@@ -24,39 +24,607 @@
   </div>
 </div>
 
-<div class="card card-soft">
-  <div class="card-body">
-    <div class="muted small mb-3">
-      👤 Постановщик: {{ task.created_by.username }}
-      • Исполнитель: {{ task.assignee.username }}
-      {% if task.due_date %}
-        • 📅 Срок: {{ task.due_date|date:"d.m.Y" }}
+<div class="task-detail-layout">
+  <div class="card card-soft">
+    <div class="card-body">
+      <div class="task-meta-grid">
+        <div class="task-meta-card">
+          <div class="task-meta-icon">👤</div>
+          <div>
+            <div class="task-meta-label">Постановщик</div>
+            <div class="task-meta-value">
+              {{ task.created_by.profile.full_name|default:"Без ФИО" }}
+            </div>
+          </div>
+        </div>
+
+        <div class="task-meta-card">
+          <div class="task-meta-icon">🧑‍💼</div>
+          <div>
+            <div class="task-meta-label">Исполнитель</div>
+            <div class="task-meta-value">
+              {{ task.assignee.profile.full_name|default:"Без ФИО" }}
+            </div>
+          </div>
+        </div>
+
+        <div class="task-meta-card">
+          <div class="task-meta-icon">📅</div>
+          <div>
+            <div class="task-meta-label">Срок</div>
+            <div class="task-meta-value">
+              {% if task.due_date %}
+                {{ task.due_date|date:"d.m.Y" }}
+              {% else %}
+                Не указан
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if task.description %}
+        <div class="task-description">
+          {{ task.description|linebreaks }}
+        </div>
+      {% else %}
+        <div class="task-description muted">
+          Описание задачи не указано.
+        </div>
+      {% endif %}
+
+      <div class="mb-4 d-flex gap-2 flex-wrap">
+        <span class="badge {{ task.status|task_status_badge_class }} pill">
+          {{ task.get_status_display }}
+        </span>
+
+        <span class="badge {{ task.priority|task_priority_badge_class }} pill">
+          {{ task.get_priority_display }}
+        </span>
+      </div>
+
+      <form method="post"
+            enctype="multipart/form-data"
+            class="task-update-form">
+        {% csrf_token %}
+
+        <div class="task-status-box">
+          <div>
+            <label class="form-label">Статус задачи</label>
+            <select name="status" class="form-select">
+              <option value="{{ Status.NEW }}" {% if task.status == Status.NEW %}selected{% endif %}>
+                Новая
+              </option>
+              <option value="{{ Status.IN_PROGRESS }}" {% if task.status == Status.IN_PROGRESS %}selected{% endif %}>
+                В работе
+              </option>
+              <option value="{{ Status.DONE }}" {% if task.status == Status.DONE %}selected{% endif %}>
+                Выполнена
+              </option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary pill" type="submit">
+            Обновить статус
+          </button>
+        </div>
+
+        <div class="task-photo-upload mt-4">
+          <div class="task-photo-upload-icon">📷</div>
+
+          <div class="task-photo-upload-body">
+            <label class="form-label mb-1">Добавить фотографии</label>
+
+            <input
+              id="task-images-input"
+              type="file"
+              name="images"
+              accept="image/*"
+              multiple
+              class="form-control"
+            >
+
+            <div class="form-text">
+              Можно добавить несколько фотографий к задаче.
+            </div>
+
+            <div id="task-selected-files" class="task-selected-files"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card card-soft">
+    <div class="card-body">
+      <div class="task-section-title-row">
+        <div>
+          <h2 class="task-section-title">Фотографии</h2>
+          <div class="muted small">
+            Материалы и подтверждения по задаче
+          </div>
+        </div>
+
+        <span class="task-photo-count">
+          {{ task.images.all|length }}
+        </span>
+      </div>
+
+      {% if task.images.all %}
+        <div class="task-gallery">
+          {% for img in task.images.all %}
+            <button
+              type="button"
+              class="task-gallery-item task-photo-open"
+              data-src="{{ img.image.url }}"
+            >
+              <img
+                src="{{ img.image.url }}"
+                class="task-gallery-img"
+                alt="Фото задачи"
+              >
+            </button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="task-empty-gallery">
+          <div class="task-empty-icon">🖼️</div>
+          <div class="fw-semibold">Фотографий пока нет</div>
+          <div class="muted small">
+            Их можно добавить через форму выше.
+          </div>
+        </div>
       {% endif %}
     </div>
-
-    {% if task.description %}
-      <div class="mb-4">{{ task.description|linebreaks }}</div>
-    {% endif %}
-
-    <div class="mb-4 d-flex gap-2 flex-wrap">
-      <span class="badge {{ task.status|task_status_badge_class }} pill">
-        {{ task.get_status_display }}
-      </span>
-
-      <span class="badge {{ task.priority|task_priority_badge_class }} pill">
-        {{ task.get_priority_display }}
-      </span>
-    </div>
-
-    <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
-      {% csrf_token %}
-      <select name="status" class="form-select" style="max-width: 260px;">
-        <option value="{{ Status.NEW }}" {% if task.status == Status.NEW %}selected{% endif %}>Новая</option>
-        <option value="{{ Status.IN_PROGRESS }}" {% if task.status == Status.IN_PROGRESS %}selected{% endif %}>В работе</option>
-        <option value="{{ Status.DONE }}" {% if task.status == Status.DONE %}selected{% endif %}>Выполнена</option>
-      </select>
-      <button class="btn btn-primary pill" type="submit">Обновить статус</button>
-    </form>
   </div>
 </div>
+
+<div class="task-lightbox" id="task-lightbox">
+  <button type="button" class="task-lightbox-close" id="task-lightbox-close">
+    ×
+  </button>
+
+  <button type="button" class="task-lightbox-nav task-lightbox-prev" id="task-lightbox-prev">
+    ‹
+  </button>
+
+  <div class="task-lightbox-content">
+    <img src="" alt="Фото задачи" id="task-lightbox-image">
+  </div>
+
+  <button type="button" class="task-lightbox-nav task-lightbox-next" id="task-lightbox-next">
+    ›
+  </button>
+</div>
+
+<style>
+  .task-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .task-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .task-meta-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+  }
+
+  .task-meta-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 14px;
+    background: #e0f2fe;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  .task-meta-label {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .task-meta-value {
+    color: #0f172a;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .task-description {
+    padding: 18px;
+    border-radius: 20px;
+    background: #ffffff;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    margin-bottom: 18px;
+    line-height: 1.55;
+  }
+
+  .task-description p:last-child {
+    margin-bottom: 0;
+  }
+
+  .task-update-form {
+    margin-top: 18px;
+  }
+
+  .task-status-box {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 16px;
+    border-radius: 20px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+  }
+
+  .task-status-box .form-select {
+    min-width: 240px;
+  }
+
+  .task-photo-upload {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px;
+    border-radius: 20px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+  }
+
+  .task-photo-upload-icon {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: 16px;
+    background: #e0f2fe;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+  }
+
+  .task-photo-upload-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-selected-files {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .task-section-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .task-section-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .task-photo-count {
+    min-width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    border: 1px solid #dbeafe;
+  }
+
+  .task-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 12px;
+  }
+
+  .task-gallery-item {
+    height: 145px;
+    padding: 6px;
+    border: 0;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    cursor: zoom-in;
+    overflow: hidden;
+    transition: 0.16s ease;
+  }
+
+  .task-gallery-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+    border-color: rgba(37, 99, 235, 0.35);
+  }
+
+  .task-gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 13px;
+    background: #ffffff;
+  }
+
+  .task-empty-gallery {
+    min-height: 220px;
+    border-radius: 22px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .task-empty-icon {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+  }
+
+  .task-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+  }
+
+  .task-lightbox.is-open {
+    display: flex;
+  }
+
+  .task-lightbox-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .task-lightbox-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  .task-lightbox-close {
+    position: fixed;
+    top: 22px;
+    right: 28px;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .task-lightbox-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 54px;
+    height: 54px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+    font-size: 2.4rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .task-lightbox-prev {
+    left: 28px;
+  }
+
+  .task-lightbox-next {
+    right: 28px;
+  }
+
+  @media (max-width: 992px) {
+    .task-detail-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .task-meta-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .task-status-box {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .task-status-box .form-select {
+      min-width: 100%;
+    }
+
+    .task-photo-upload {
+      flex-direction: column;
+    }
+
+    .task-gallery {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .task-gallery-item {
+      height: 120px;
+    }
+
+    .task-lightbox {
+      padding: 16px;
+    }
+
+    .task-lightbox-close {
+      top: 12px;
+      right: 12px;
+      width: 42px;
+      height: 42px;
+      font-size: 1.7rem;
+    }
+
+    .task-lightbox-nav {
+      width: 42px;
+      height: 42px;
+      font-size: 2rem;
+    }
+
+    .task-lightbox-prev {
+      left: 10px;
+    }
+
+    .task-lightbox-next {
+      right: 10px;
+    }
+  }
+</style>
+
+<script>
+  const taskImagesInput = document.getElementById("task-images-input");
+  const taskSelectedFiles = document.getElementById("task-selected-files");
+
+  if (taskImagesInput && taskSelectedFiles) {
+    taskImagesInput.addEventListener("change", function() {
+      const count = taskImagesInput.files.length;
+
+      if (count > 0) {
+        taskSelectedFiles.textContent = `Выбрано фото: ${count}`;
+      } else {
+        taskSelectedFiles.textContent = "";
+      }
+    });
+  }
+
+  const taskPhotoButtons = Array.from(document.querySelectorAll(".task-photo-open"));
+  const taskLightbox = document.getElementById("task-lightbox");
+  const taskLightboxImage = document.getElementById("task-lightbox-image");
+  const taskLightboxClose = document.getElementById("task-lightbox-close");
+  const taskLightboxPrev = document.getElementById("task-lightbox-prev");
+  const taskLightboxNext = document.getElementById("task-lightbox-next");
+
+  let currentTaskPhotoIndex = 0;
+
+  function openTaskPhoto(index) {
+    if (!taskPhotoButtons.length) return;
+
+    currentTaskPhotoIndex = index;
+    taskLightboxImage.src = taskPhotoButtons[currentTaskPhotoIndex].dataset.src;
+    taskLightbox.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeTaskPhoto() {
+    taskLightbox.classList.remove("is-open");
+    taskLightboxImage.src = "";
+    document.body.style.overflow = "";
+  }
+
+  function showPrevTaskPhoto() {
+    currentTaskPhotoIndex--;
+
+    if (currentTaskPhotoIndex < 0) {
+      currentTaskPhotoIndex = taskPhotoButtons.length - 1;
+    }
+
+    openTaskPhoto(currentTaskPhotoIndex);
+  }
+
+  function showNextTaskPhoto() {
+    currentTaskPhotoIndex++;
+
+    if (currentTaskPhotoIndex >= taskPhotoButtons.length) {
+      currentTaskPhotoIndex = 0;
+    }
+
+    openTaskPhoto(currentTaskPhotoIndex);
+  }
+
+  taskPhotoButtons.forEach((button, index) => {
+    button.addEventListener("click", function() {
+      openTaskPhoto(index);
+    });
+  });
+
+  if (taskLightboxClose) {
+    taskLightboxClose.addEventListener("click", closeTaskPhoto);
+  }
+
+  if (taskLightboxPrev) {
+    taskLightboxPrev.addEventListener("click", showPrevTaskPhoto);
+  }
+
+  if (taskLightboxNext) {
+    taskLightboxNext.addEventListener("click", showNextTaskPhoto);
+  }
+
+  if (taskLightbox) {
+    taskLightbox.addEventListener("click", function(e) {
+      if (e.target === taskLightbox) {
+        closeTaskPhoto();
+      }
+    });
+  }
+
+  document.addEventListener("keydown", function(e) {
+    if (!taskLightbox || !taskLightbox.classList.contains("is-open")) return;
+
+    if (e.key === "Escape") {
+      closeTaskPhoto();
+    }
+
+    if (e.key === "ArrowLeft") {
+      showPrevTaskPhoto();
+    }
+
+    if (e.key === "ArrowRight") {
+      showNextTaskPhoto();
+    }
+  });
+</script>
 {% endblock %}

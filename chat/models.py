@@ -88,6 +88,14 @@ class PrivateMessage(models.Model):
         on_delete=models.CASCADE
     )
     body = models.TextField()
+
+    image = models.ImageField(
+        "Изображение",
+        upload_to="chat/private/",
+        blank=True,
+        null=True
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -146,6 +154,14 @@ class GroupChatMessage(models.Model):
         on_delete=models.CASCADE
     )
     body = models.TextField()
+
+    image = models.ImageField(
+        "Изображение",
+        upload_to="chat/group/",
+        blank=True,
+        null=True
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -191,3 +207,35 @@ class GroupChatRead(models.Model):
 
     def __str__(self):
         return f"{self.user.username} read group {self.group.id}"
+    
+class GroupChatMessageImage(models.Model):
+    message = models.ForeignKey(
+        GroupChatMessage,
+        on_delete=models.CASCADE,
+        related_name="images",
+        verbose_name="Сообщение"
+    )
+    image = models.ImageField(
+        "Фотография",
+        upload_to="chat/group/gallery/"
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Фотография группового сообщения"
+        verbose_name_plural = "Фотографии группового сообщения"
+
+    def __str__(self):
+        return f"Фото для группового сообщения {self.message_id}"
+
+class PrivateMessageImage(models.Model):
+    message = models.ForeignKey(
+        PrivateMessage,
+        on_delete=models.CASCADE,
+        related_name="images"
+    )
+    image = models.ImageField(upload_to="chat/private/gallery/")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Фото к личному сообщению {self.message_id}"

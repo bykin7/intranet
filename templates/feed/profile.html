@@ -1,5 +1,5 @@
 {% extends "core/base.html" %}
-{% block title %}HappyTogether — Мой профиль{% endblock %}
+{% block title %}Альфа-М Portal — Мой профиль{% endblock %}
 
 {% block content %}
 <div class="page-header-unified">
@@ -33,7 +33,7 @@
         <div class="muted mb-2">@{{ user.username }}</div>
 
         <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
-                    {% if user.profile.position == "supervisor" %}
+          {% if user.profile.position == "supervisor" %}
             <span class="badge text-bg-primary pill">Супервайзер</span>
           {% elif user.profile.position == "security" %}
             <span class="badge text-bg-danger pill">Служба безопасности</span>
@@ -53,10 +53,30 @@
         </div>
 
         <div class="mt-4 text-start small">
-          <div class="mb-2">
-            <span class="muted">Отдел:</span>
-            <span>{{ user.profile.department|default:"—" }}</span>
-          </div>
+          {% if user.profile.position == "supervisor" or user.profile.position == "security" %}
+            <div class="mb-2">
+              <span class="muted">Магазины:</span>
+              {% if user.profile.managed_stores.all %}
+                <span>
+                  {% for store in user.profile.managed_stores.all %}
+                    {{ store.name }}{% if not forloop.last %}, {% endif %}
+                  {% endfor %}
+                </span>
+              {% else %}
+                <span>—</span>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="mb-2">
+              <span class="muted">Магазин:</span>
+              {% if user.profile.store %}
+                <span>{{ user.profile.store.name }}</span>
+              {% else %}
+                <span>—</span>
+              {% endif %}
+            </div>
+          {% endif %}
+
           <div>
             <span class="muted">Телефон:</span>
             <span>{{ user.profile.phone|default:"—" }}</span>
@@ -84,8 +104,27 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <label class="form-label">Отдел</label>
-              {{ form.department }}
+              {% if user.profile.position == "supervisor" or user.profile.position == "security" %}
+                <label class="form-label">Магазины</label>
+                <div class="form-control bg-light" style="height: auto; min-height: 46px;">
+                  {% if user.profile.managed_stores.all %}
+                    {% for store in user.profile.managed_stores.all %}
+                      {{ store.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              {% else %}
+                <label class="form-label">Магазин</label>
+                <div class="form-control bg-light" style="height: auto; min-height: 46px;">
+                  {% if user.profile.store %}
+                    {{ user.profile.store.name }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
 
             <div class="col-12 col-md-6">
@@ -95,7 +134,9 @@
           </div>
 
           <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-success pill">Сохранить изменения</button>
+            <button type="submit" class="btn btn-success pill">
+              Сохранить изменения
+            </button>
           </div>
         </form>
       </div>

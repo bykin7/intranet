@@ -18,7 +18,7 @@
 <div class="card card-soft">
   <div class="card-body">
     <p class="mb-3">
-      Удалить участника <strong>{{ membership.user.username }}</strong> из группы?
+      Удалить участника <strong>{{ membership.user.profile.full_name|default:"Без ФИО" }}</strong> из группы?
     </p>
 
     <form method="post" class="d-flex gap-2">

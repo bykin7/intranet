@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "feed.apps.FeedConfig",
     "tasks",
     "chat",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -63,6 +64,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "notifications.context_processors.notifications_context",
             ],
         },
     },
@@ -175,3 +177,6 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
