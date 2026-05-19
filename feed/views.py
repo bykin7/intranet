@@ -345,6 +345,14 @@ def profile_view(request):
     )
 
 
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.shortcuts import render
+
+from .models import Profile
+from .permissions import get_visible_profiles_for_user
+
+
 @login_required
 def employees_list(request):
     profiles = get_visible_profiles_for_user(request.user).order_by(
@@ -358,13 +366,12 @@ def employees_list(request):
     if search_query:
         profiles = profiles.filter(
             Q(full_name__icontains=search_query) |
-            Q(user__username__icontains=search_query)
+            Q(user__username__icontains=search_query) |
+            Q(phone__icontains=search_query)
         )
 
     if position_filter:
         profiles = profiles.filter(position=position_filter)
-
-    positions = Profile.POSITION_CHOICES
 
     return render(
         request,
@@ -373,8 +380,8 @@ def employees_list(request):
             "profiles": profiles,
             "search_query": search_query,
             "position_filter": position_filter,
-            "positions": positions,
-        },
+            "positions": Profile.POSITION_CHOICES,
+        }
     )
 
 
