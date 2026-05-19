@@ -1,6 +1,5 @@
 import logging
 
-from .access import get_visible_profiles_for_user
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User

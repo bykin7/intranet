@@ -95,15 +95,6 @@ def can_delete_comment(user, comment):
 
 
 def get_accessible_stores(user):
-    """
-    Какие магазины доступны пользователю.
-
-    sysadmin - все магазины.
-    supervisor/security - магазины из managed_stores.
-    admin - только свой магазин.
-    cashier/loss_prevention/worker - магазины своего супервайзера/СБ.
-    """
-
     profile = get_user_profile(user)
 
     if not profile:
@@ -155,10 +146,6 @@ def get_accessible_stores(user):
 
 
 def get_visible_profiles_for_user(user, include_self=True):
-    """
-    Какие профили сотрудников видит пользователь.
-    """
-
     profile = get_user_profile(user)
 
     if not profile:
@@ -196,10 +183,6 @@ def get_visible_profiles_for_user(user, include_self=True):
 
 
 def get_visible_users_for_user(user, include_self=True):
-    """
-    Каких пользователей можно видеть/выбирать в задачах и чатах.
-    """
-
     profiles = get_visible_profiles_for_user(user, include_self=include_self)
 
     return (
@@ -237,7 +220,6 @@ def can_view_post(user, post):
 
     accessible_stores = get_accessible_stores(user)
 
-    # Если новость без выбранных магазинов - считаем общей
     if not post.stores.exists():
         return True
 
