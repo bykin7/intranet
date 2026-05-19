@@ -1,5 +1,6 @@
 import logging
 
+from feed.access import can_user_see_user
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseForbidden
@@ -195,7 +196,6 @@ def private_chat_detail(request, chat_id):
     if request.user != chat.user1 and request.user != chat.user2:
         return HttpResponseForbidden("Нет доступа к этому чату.")
 
-    other_user = chat.user2 if request.user == chat.user1 else chat.user1
 
     if request.method == "POST":
         body = request.POST.get("body", "").strip()

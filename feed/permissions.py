@@ -1,11 +1,25 @@
 from django.contrib.auth.models import User
+from django.db.models import Q
+
+from .models import Profile, Store
+
 
 def get_position(user):
-    if not user.is_authenticated:
+    if not user or not user.is_authenticated:
         return None
 
     try:
         return user.profile.position
+    except Exception:
+        return None
+
+
+def get_user_profile(user):
+    if not user or not user.is_authenticated:
+        return None
+
+    try:
+        return user.profile
     except Exception:
         return None
 
@@ -46,6 +60,10 @@ def can_change_position(user):
     return is_sysadmin(user)
 
 
+def can_manage_stores(user):
+    return is_sysadmin(user)
+
+
 def can_create_groups(user):
     return get_position(user) in ["supervisor", "security", "admin"]
 
@@ -75,94 +93,135 @@ def can_delete_comment(user, comment):
 
     return comment.author == user
 
-def can_manage_stores(user):
-    return get_position(user) == "sysadmin"
 
 def get_accessible_stores(user):
-    if not user.is_authenticated or not hasattr(user, "profile"):
-        return Store.objects.none()
+    """
+    Какие магазины доступны пользователю.
 
-    profile = user.profile
+    sysadmin - все магазины.
+    supervisor/security - магазины из managed_stores.
+    admin - только свой магазин.
+    cashier/loss_prevention/worker - магазины своего супервайзера/СБ.
+    """
 
-    if profile.position == "sysadmin":
-        return Store.objects.all()
-
-    if profile.position in ["supervisor", "security"]:
-        return profile.managed_stores.all()
-
-    if profile.store:
-        return Store.objects.filter(id=profile.store.id)
-
-    return Store.objects.none()
-
-from django.db.models import Q
-from .models import Profile, Store
-
-
-def get_user_profile(user):
-    if not user or not user.is_authenticated:
-        return None
-
-    try:
-        return user.profile
-    except Exception:
-        return None
-
-
-def get_accessible_stores(user):
     profile = get_user_profile(user)
 
     if not profile:
         return Store.objects.none()
 
-    if profile.position == "sysadmin":
+    if user.is_superuser or profile.position == "sysadmin":
         return Store.objects.filter(is_active=True)
 
     if profile.position in ["supervisor", "security"]:
-        return profile.managed_stores.filter(is_active=True)
+        stores = profile.managed_stores.filter(is_active=True)
 
-    if profile.store:
-        return Store.objects.filter(id=profile.store.id, is_active=True)
+        if stores.exists():
+            return stores
+
+        if profile.store_id:
+            return Store.objects.filter(id=profile.store_id, is_active=True)
+
+        return Store.objects.none()
+
+    if profile.position == "admin":
+        if profile.store_id:
+            return Store.objects.filter(id=profile.store_id, is_active=True)
+
+        return Store.objects.none()
+
+    if profile.position in ["cashier", "loss_prevention", "worker"]:
+        if not profile.store_id:
+            return Store.objects.none()
+
+        managers = Profile.objects.filter(
+            position__in=["supervisor", "security"],
+            managed_stores=profile.store,
+        )
+
+        stores = Store.objects.filter(
+            is_active=True,
+            managers__in=managers,
+        ).distinct()
+
+        if stores.exists():
+            return stores
+
+        return Store.objects.filter(id=profile.store_id, is_active=True)
+
+    if profile.store_id:
+        return Store.objects.filter(id=profile.store_id, is_active=True)
 
     return Store.objects.none()
 
 
-def get_visible_profiles_for_user(user):
+def get_visible_profiles_for_user(user, include_self=True):
+    """
+    Какие профили сотрудников видит пользователь.
+    """
+
     profile = get_user_profile(user)
 
     if not profile:
         return Profile.objects.none()
 
-    if profile.position == "sysadmin":
-        return (
+    if user.is_superuser or profile.position == "sysadmin":
+        profiles = (
             Profile.objects
             .select_related("user", "store")
             .prefetch_related("managed_stores")
             .all()
         )
+    else:
+        accessible_stores = get_accessible_stores(user)
 
-    accessible_stores = get_accessible_stores(user)
+        profiles = (
+            Profile.objects
+            .select_related("user", "store")
+            .prefetch_related("managed_stores")
+            .filter(
+                Q(user=user) |
+                Q(store__in=accessible_stores) |
+                Q(
+                    position__in=["supervisor", "security"],
+                    managed_stores__in=accessible_stores,
+                )
+            )
+            .distinct()
+        )
+
+    if not include_self:
+        profiles = profiles.exclude(user=user)
+
+    return profiles
+
+
+def get_visible_users_for_user(user, include_self=True):
+    """
+    Каких пользователей можно видеть/выбирать в задачах и чатах.
+    """
+
+    profiles = get_visible_profiles_for_user(user, include_self=include_self)
 
     return (
-        Profile.objects
-        .select_related("user", "store")
-        .prefetch_related("managed_stores")
-        .filter(
-            Q(user=user) |
-
-            # Обычные сотрудники, администраторы и рабочие аккаунты
-            # видны только если их основной магазин входит в доступные магазины пользователя
-            Q(store__in=accessible_stores) |
-
-            # Супервайзеры и СБ видны только если у них есть пересечение
-            # хотя бы по одному доступному магазину
-            Q(
-                position__in=["supervisor", "security"],
-                managed_stores__in=accessible_stores
-            )
-        )
+        User.objects
+        .filter(profile__in=profiles, is_active=True)
+        .select_related("profile")
+        .order_by("profile__full_name", "username")
         .distinct()
     )
+
+
+def can_user_see_user(user, other_user):
+    if not user or not other_user:
+        return False
+
+    if user == other_user:
+        return True
+
+    return get_visible_users_for_user(user, include_self=False).filter(
+        id=other_user.id
+    ).exists()
+
 
 def can_view_post(user, post):
     profile = get_user_profile(user)
@@ -170,7 +229,7 @@ def can_view_post(user, post):
     if not profile:
         return False
 
-    if profile.position == "sysadmin":
+    if user.is_superuser or profile.position == "sysadmin":
         return True
 
     if post.author == user:
@@ -178,9 +237,10 @@ def can_view_post(user, post):
 
     accessible_stores = get_accessible_stores(user)
 
-    return post.stores.filter(id__in=accessible_stores.values_list("id", flat=True)).exists()
+    # Если новость без выбранных магазинов - считаем общей
+    if not post.stores.exists():
+        return True
 
-def get_visible_users_for_user(user):
-    return User.objects.filter(
-        profile__in=get_visible_profiles_for_user(user)
-    ).distinct()
+    return post.stores.filter(
+        id__in=accessible_stores.values_list("id", flat=True)
+    ).exists()

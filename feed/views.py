@@ -1,5 +1,6 @@
 import logging
 
+from .access import get_visible_profiles_for_user
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -346,34 +347,24 @@ def profile_view(request):
 
 @login_required
 def employees_list(request):
-    profiles = (
-        get_visible_profiles_for_user(request.user)
-        .order_by("full_name", "user__username")
+    profiles = get_visible_profiles_for_user(request.user).order_by(
+        "full_name",
+        "user__username"
     )
 
     search_query = request.GET.get("q", "").strip()
     position_filter = request.GET.get("position", "").strip()
-    store_filter = request.GET.get("store", "").strip()
 
     if search_query:
         profiles = profiles.filter(
-            Q(full_name__icontains=search_query)
-            | Q(user__username__icontains=search_query)
-            | Q(user__first_name__icontains=search_query)
-            | Q(user__last_name__icontains=search_query)
+            Q(full_name__icontains=search_query) |
+            Q(user__username__icontains=search_query)
         )
 
     if position_filter:
         profiles = profiles.filter(position=position_filter)
 
-    if store_filter:
-        profiles = profiles.filter(
-            Q(store_id=store_filter)
-            | Q(managed_stores__id=store_filter)
-        ).distinct()
-
     positions = Profile.POSITION_CHOICES
-    stores = Store.objects.filter(is_active=True).order_by("name")
 
     return render(
         request,
@@ -382,9 +373,7 @@ def employees_list(request):
             "profiles": profiles,
             "search_query": search_query,
             "position_filter": position_filter,
-            "store_filter": store_filter,
             "positions": positions,
-            "stores": stores,
         },
     )
 
