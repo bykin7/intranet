@@ -35,8 +35,7 @@
         {% if private_chat_data %}
           <div class="d-flex flex-column gap-3">
             {% for item in private_chat_data %}
-              <a href="{% url 'private_chat_detail' item.chat.id %}"
-                 class="text-decoration-none text-reset">
+              <a href="{% url 'private_chat_detail' item.chat.id %}" class="text-decoration-none text-reset">
                 <div class="p-3 rounded-4 border bg-white shadow-sm">
                   <div class="d-flex justify-content-between align-items-start gap-3">
                     <div class="d-flex gap-3 align-items-start flex-grow-1">
@@ -94,13 +93,12 @@
         {% if group_chat_data %}
           <div class="d-flex flex-column gap-3">
             {% for item in group_chat_data %}
-              <a href="{% url 'group_chat_detail' item.group.id %}"
-                 class="text-decoration-none text-reset">
+              <a href="{% url 'group_chat_detail' item.group.id %}" class="text-decoration-none text-reset">
                 <div class="p-3 rounded-4 border bg-white shadow-sm">
                   <div class="d-flex justify-content-between align-items-start gap-3">
                     <div class="d-flex gap-3 align-items-start flex-grow-1">
                       <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle"
-                           style="width:42px;height:42px;font-weight:800;color:#1d4ed8;">
+                           style="width:42px;height:42px;font-weight:800;color:#1d4ed8;min-width:42px;">
                         👥
                       </div>
 
@@ -114,6 +112,7 @@
 
                         <div class="small muted">
                           Владелец: {{ item.group.owner.profile.full_name|default:"Без ФИО" }}
+                        </div>
 
                         {% if item.last_message %}
                           <div class="mt-2 small text-truncate" style="max-width: 100%;">
