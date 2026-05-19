@@ -95,14 +95,26 @@ def can_delete_comment(user, comment):
 
 
 def get_accessible_stores(user):
+    """
+    Возвращает магазины, доступные пользователю.
+
+    Логика:
+    - sysadmin видит все магазины;
+    - supervisor/security видят магазины из managed_stores;
+    - admin/cashier/loss_prevention/worker видят все магазины своего СВ/СБ;
+    - если СВ/СБ не найден, пользователь видит хотя бы свой магазин.
+    """
+
     profile = get_user_profile(user)
 
     if not profile:
         return Store.objects.none()
 
+    # Системный администратор видит все магазины
     if user.is_superuser or profile.position == "sysadmin":
         return Store.objects.filter(is_active=True)
 
+    # Супервайзер и СБ видят закреплённые за ними магазины
     if profile.position in ["supervisor", "security"]:
         stores = profile.managed_stores.filter(is_active=True)
 
@@ -114,13 +126,8 @@ def get_accessible_stores(user):
 
         return Store.objects.none()
 
-    if profile.position == "admin":
-        if profile.store_id:
-            return Store.objects.filter(id=profile.store_id, is_active=True)
-
-        return Store.objects.none()
-
-    if profile.position in ["cashier", "loss_prevention", "worker"]:
+    # Админ магазина, кассир, ОПП и рабочий видят магазины своего СВ/СБ
+    if profile.position in ["admin", "cashier", "loss_prevention", "worker"]:
         if not profile.store_id:
             return Store.objects.none()
 
@@ -139,6 +146,7 @@ def get_accessible_stores(user):
 
         return Store.objects.filter(id=profile.store_id, is_active=True)
 
+    # Запасной вариант для остальных ролей
     if profile.store_id:
         return Store.objects.filter(id=profile.store_id, is_active=True)
 
@@ -146,11 +154,16 @@ def get_accessible_stores(user):
 
 
 def get_visible_profiles_for_user(user, include_self=True):
+    """
+    Возвращает профили сотрудников, которых может видеть пользователь.
+    """
+
     profile = get_user_profile(user)
 
     if not profile:
         return Profile.objects.none()
 
+    # Системный администратор видит всех
     if user.is_superuser or profile.position == "sysadmin":
         profiles = (
             Profile.objects
@@ -167,7 +180,12 @@ def get_visible_profiles_for_user(user, include_self=True):
             .prefetch_related("managed_stores")
             .filter(
                 Q(user=user) |
+
+                # Обычные сотрудники и админы магазинов,
+                # чей основной магазин входит в доступные магазины
                 Q(store__in=accessible_stores) |
+
+                # СВ и СБ, у которых есть пересечение по доступным магазинам
                 Q(
                     position__in=["supervisor", "security"],
                     managed_stores__in=accessible_stores,
@@ -183,6 +201,10 @@ def get_visible_profiles_for_user(user, include_self=True):
 
 
 def get_visible_users_for_user(user, include_self=True):
+    """
+    Возвращает пользователей, которых можно видеть/выбирать в задачах и чатах.
+    """
+
     profiles = get_visible_profiles_for_user(user, include_self=include_self)
 
     return (
@@ -220,6 +242,7 @@ def can_view_post(user, post):
 
     accessible_stores = get_accessible_stores(user)
 
+    # Если у новости не выбраны магазины, считаем её общей
     if not post.stores.exists():
         return True
 
