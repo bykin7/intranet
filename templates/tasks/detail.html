@@ -1,23 +1,28 @@
+```html
 {% extends "core/base.html" %}
 {% load feed_extras %}
-{% block title %}HappyTogether — {{ task.title }}{% endblock %}
 
-{% block page_back %}
-  <a class="btn-back" href="{% url 'task_list' %}">← Назад</a>
-{% endblock %}
+{% block title %}HappyTogether — {{ task.title }}{% endblock %}
 
 {% block content %}
 <div class="page-header-unified">
   <div class="page-header-main">
     <h1 class="page-title">{{ task.title }}</h1>
+
     <div class="page-subtitle">
       Детали задачи, исполнитель, статус и прикреплённые фотографии
     </div>
   </div>
 
   <div class="page-header-actions">
+    <a class="btn btn-light pill btn-sm"
+       href="{% url 'task_list' %}">
+      ← Назад
+    </a>
+
     {% if task.created_by == user %}
-      <a class="btn btn-outline-danger pill" href="{% url 'task_delete' task.id %}">
+      <a class="btn btn-outline-danger pill btn-sm"
+         href="{% url 'task_delete' task.id %}">
         Удалить задачу
       </a>
     {% endif %}
