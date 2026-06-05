@@ -2,6 +2,16 @@ from django.conf import settings
 from django.db import models
 
 
+
+def get_user_display_name(user):
+    try:
+        full_name = (user.profile.full_name or "").strip()
+    except Exception:
+        full_name = ""
+
+    return full_name or user.username
+
+
 class ChatRoom(models.Model):
     name = models.CharField(max_length=120, unique=True)
 
@@ -19,7 +29,7 @@ class Message(models.Model):
         ordering = ["created_at"]
 
     def __str__(self) -> str:
-        return f"{self.author}: {self.body[:30]}"
+        return f"{get_user_display_name(self.author)}: {self.body[:30]}"
 
 class Group(models.Model):
     name = models.CharField(max_length=150)
@@ -48,7 +58,7 @@ class GroupMember(models.Model):
         ordering = ["joined_at"]
 
     def __str__(self):
-        return f"{self.user.username} -> {self.group.name}"
+        return f"{get_user_display_name(self.user)} -> {self.group.name}"
 
 
 class PrivateChat(models.Model):
@@ -74,7 +84,7 @@ class PrivateChat(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user1.username} ↔ {self.user2.username}"
+        return f"{get_user_display_name(self.user1)} ↔ {get_user_display_name(self.user2)}"
 
 
 class PrivateMessage(models.Model):
@@ -102,7 +112,7 @@ class PrivateMessage(models.Model):
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"{self.author.username}: {self.body[:30]}"
+        return f"{get_user_display_name(self.author)}: {self.body[:30]}"
 
 
 class GroupChat(models.Model):
@@ -140,7 +150,7 @@ class GroupChatMember(models.Model):
         ordering = ["joined_at"]
 
     def __str__(self):
-        return f"{self.user.username} -> {self.group.name}"
+        return f"{get_user_display_name(self.user)} -> {self.group.name}"
 
 
 class GroupChatMessage(models.Model):
@@ -168,7 +178,7 @@ class GroupChatMessage(models.Model):
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"{self.author.username} @ {self.group.name}: {self.body[:30]}"
+        return f"{get_user_display_name(self.author)} @ {self.group.name}: {self.body[:30]}"
 
 
 class PrivateChatRead(models.Model):
@@ -187,7 +197,7 @@ class PrivateChatRead(models.Model):
         unique_together = ("chat", "user")
 
     def __str__(self):
-        return f"{self.user.username} read private chat {self.chat.id}"
+        return f"{get_user_display_name(self.user)} read private chat {self.chat.id}"
 
 
 class GroupChatRead(models.Model):
@@ -206,7 +216,7 @@ class GroupChatRead(models.Model):
         unique_together = ("group", "user")
 
     def __str__(self):
-        return f"{self.user.username} read group {self.group.id}"
+        return f"{get_user_display_name(self.user)} read group {self.group.id}"
     
 class GroupChatMessageImage(models.Model):
     message = models.ForeignKey(
